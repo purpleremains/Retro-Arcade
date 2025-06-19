@@ -393,6 +393,21 @@
                     e.preventDefault();
                 }
                 keysPressed.add(lowerKey);
+
+                // --- MODIFIED LOGIC FOR SNAKE GAME INPUT ---
+                // For snake, update nextDirection immediately on keydown
+                if (currentGame === 'snake') {
+                    if (lowerKey === 'arrowup' || lowerKey === 'w') {
+                        changeDirection('up');
+                    } else if (lowerKey === 'arrowdown' || lowerKey === 's') {
+                        changeDirection('down');
+                    } else if (lowerKey === 'arrowleft' || lowerKey === 'a') {
+                        changeDirection('left');
+                    } else if (lowerKey === 'arrowright' || lowerKey === 'd') {
+                        changeDirection('right');
+                    }
+                }
+                // --- END MODIFIED LOGIC ---
             }
         });
 
@@ -582,19 +597,10 @@
             if (gameState.timeSinceLastMove >= moveInterval) {
                 gameState.timeSinceLastMove -= moveInterval;
 
-                // Check for keyboard inputs
-                if (keysPressed.has('arrowup') || keysPressed.has('w')) {
-                    changeDirection('up');
-                } else if (keysPressed.has('arrowdown') || keysPressed.has('s')) {
-                    changeDirection('down');
-                } else if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                    changeDirection('left');
-                } else if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                    changeDirection('right');
-                }
-                
+                // The direction is now updated by the keydown event listener.
+                // We just apply the queued nextDirection here.
                 gameState.direction = gameState.nextDirection;
-
+                
                 const head = {
                     x: gameState.snake[0].x + gameState.direction.x,
                     y: gameState.snake[0].y + gameState.direction.y
@@ -647,12 +653,12 @@
             ctx.fillStyle = '#00ff41';
             for (let segment of gameState.snake) {
                 ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize,
-                            gameState.gridSize - 2, gameState.gridSize - 2);
+                             gameState.gridSize - 2, gameState.gridSize - 2);
             }
 
             ctx.fillStyle = '#ff0041';
             ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize,
-                       gameState.gridSize - 2, gameState.gridSize - 2);
+                         gameState.gridSize - 2, gameState.gridSize - 2);
         }
 
         function changeDirection(dir) {

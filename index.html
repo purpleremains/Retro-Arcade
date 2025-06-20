@@ -1006,173 +1006,184 @@
                 blocks: [],
                 blocksRemaining: 0
             };
-
+        
             const blockWidth = 55;
             const blockHeight = 15;
             const blockPadding = 5;
             const blockOffsetTop = 50;
             const blockOffsetLeft = (canvas.width - (10 * blockWidth + 9 * blockPadding)) / 2;
-
-            for (let row = 0; row < 5; row++) {
+        
+            for (let row = 0; row < 5; row++) { // 'row' goes from 0 to 4
                 for (let col = 0; col < 10; col++) {
                     gameState.blocks.push({
                         x: col * (blockWidth + blockPadding) + blockOffsetLeft,
                         y: row * (blockHeight + blockPadding) + blockOffsetTop,
                         width: blockWidth,
                         height: blockHeight,
-                        color: `hsl(${row * 50}, 100%, 50%)`
+                        color: `hsl(${row * 50}, 100%, 50%)`,
+                        // THIS IS THE UPDATED KEY CHANGE:
+                        // For row 0 (front): 5 - 0 = 5 hits
+                        // For row 1: 5 - 1 = 4 hits
+                        // For row 2: 5 - 2 = 3 hits
+                        // For row 3: 5 - 3 = 2 hits
+                        // For row 4 (back): 5 - 4 = 1 hit
+                        hits: 5 - row 
                     });
                     gameState.blocksRemaining++;
                 }
             }
         }
 
-        // Helper function to check AABB collision
-        function checkCollision(ball, rect) {
-            // Check if ball is touching or overlapping rect
-            return ball.x + ball.radius > rect.x &&
-                   ball.x - ball.radius < rect.x + rect.width &&
-                   ball.y + ball.radius > rect.y &&
-                   ball.y - ball.radius < rect.y + rect.height;
+    // Helper function to check AABB collision
+    function checkCollision(ball, rect) {
+        // Check if ball is touching or overlapping rect
+        return ball.x + ball.radius > rect.x &&
+               ball.x - ball.radius < rect.x + rect.width &&
+               ball.y + ball.radius > rect.y &&
+               ball.y - ball.radius < rect.y + rect.height;
+    }
+    
+    // Helper function to get point of impact and normal
+    function getCollisionResponse(ball, block) {
+        let hitX = false; // Did it hit horizontally?
+        let hitY = false; // Did it hit vertically?
+    
+        // Determine if horizontal or vertical collision occurred
+        // Check if ball was outside horizontally and moved inside
+        if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
+            ball.x = block.x - ball.radius; // Reposition
+            ball.vx *= -1;
+            hitX = true;
+        } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
+            ball.x = block.x + block.width + ball.radius; // Reposition
+            ball.vx *= -1;
+            hitX = true;
         }
-
-        // Helper function to get point of impact and normal
-        function getCollisionResponse(ball, block) {
-            let hitX = false; // Did it hit horizontally?
-            let hitY = false; // Did it hit vertically?
-
-            // Determine if horizontal or vertical collision occurred
-            // Check if ball was outside horizontally and moved inside
-            if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
-                ball.x = block.x - ball.radius; // Reposition
-                ball.vx *= -1;
-                hitX = true;
-            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
-                ball.x = block.x + block.width + ball.radius; // Reposition
-                ball.vx *= -1;
-                hitX = true;
-            }
-
-            // Check if ball was outside vertically and moved inside
-            if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
-                ball.y = block.y - ball.radius; // Reposition
-                ball.vy *= -1;
-                hitY = true;
-            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
-                ball.y = block.y + block.height + ball.radius; // Reposition
-                ball.vy *= -1;
-                hitY = true;
-            }
-
-            // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
-            // For simplicity in Breakout, usually one axis dominates.
-            // This basic logic handles the most common cases correctly.
-            
-            return hitX || hitY; // Return true if any collision occurred
+    
+        // Check if ball was outside vertically and moved inside
+        if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
+            ball.y = block.y - ball.radius; // Reposition
+            ball.vy *= -1;
+            hitY = true;
+        } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
+            ball.y = block.y + block.height + ball.radius; // Reposition
+            ball.vy *= -1;
+            hitY = true;
         }
-
-
-        function updateBreakout(deltaTime) {
-            // Paddle movement
-            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime);
-            }
-            if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
-            }
-
-            // Store previous ball position for more accurate collision detection
-            gameState.ball.prevX = gameState.ball.x;
-            gameState.ball.prevY = gameState.ball.y;
-
-            // Ball movement
-            gameState.ball.x += gameState.ball.vx * deltaTime;
-            gameState.ball.y += gameState.ball.vy * deltaTime;
-
-            // Ball collision with walls
-            if (gameState.ball.x - gameState.ball.radius <= 0) {
-                 gameState.ball.x = gameState.ball.radius; // Reposition
-                 gameState.ball.vx = -gameState.ball.vx;
-                 // Removed playSound('bounce');
-            } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
-                 gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
-                 gameState.ball.vx = -gameState.ball.vx;
-                 // Removed playSound('bounce');
-            }
-
-            if (gameState.ball.y - gameState.ball.radius <= 0) {
-                 gameState.ball.y = gameState.ball.radius; // Reposition
-                 gameState.ball.vy = -gameState.ball.vy;
-                 // Removed playSound('bounce');
-            }
-
-            // Ball collision with paddle
-            // Check if ball hit the paddle from above (moving downwards)
-            if (gameState.ball.vy > 0 &&
-                gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
-                gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
-                gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
-                gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
-            {
-                // Reposition the ball on top of the paddle to prevent sticking
-                gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
-
-                gameState.ball.vy = -gameState.ball.vy;
-                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
-                gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
-                // Removed playSound('bounce');
-            }
-
-            // Ball collision with blocks
-            // Iterate backwards to safely remove elements during iteration
-            for (let i = gameState.blocks.length - 1; i >= 0; i--) {
-                const block = gameState.blocks[i];
-
-                if (checkCollision(gameState.ball, block)) {
-                    // This is a collision! Now handle the bounce and remove the block.
-                    // Call the new helper function to handle reflection and repositioning
-                    if (getCollisionResponse(gameState.ball, block)) {
+    
+        // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
+        // For simplicity in Breakout, usually one axis dominates.
+        // This basic logic handles the most common cases correctly.
+        
+        return hitX || hitY; // Return true if any collision occurred
+    }
+    
+    
+    function updateBreakout(deltaTime) {
+        // Paddle movement
+        if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
+            gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime);
+        }
+        if (keysPressed.has('arrowright') || keysPressed.has('d')) {
+            gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
+        }
+    
+        // Store previous ball position for more accurate collision detection
+        gameState.ball.prevX = gameState.ball.x;
+        gameState.ball.prevY = gameState.ball.y;
+    
+        // Ball movement
+        gameState.ball.x += gameState.ball.vx * deltaTime;
+        gameState.ball.y += gameState.ball.vy * deltaTime;
+    
+        // Ball collision with walls
+        if (gameState.ball.x - gameState.ball.radius <= 0) {
+            gameState.ball.x = gameState.ball.radius; // Reposition
+            gameState.ball.vx = -gameState.ball.vx;
+            // Removed playSound('bounce');
+        } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
+            gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
+            gameState.ball.vx = -gameState.ball.vx;
+            // Removed playSound('bounce');
+        }
+    
+        if (gameState.ball.y - gameState.ball.radius <= 0) {
+            gameState.ball.y = gameState.ball.radius; // Reposition
+            gameState.ball.vy = -gameState.ball.vy;
+            // Removed playSound('bounce');
+        }
+    
+        // Ball collision with paddle
+        // Check if ball hit the paddle from above (moving downwards)
+        if (gameState.ball.vy > 0 &&
+            gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
+            gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
+            gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
+            gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
+        {
+            // Reposition the ball on top of the paddle to prevent sticking
+            gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
+    
+            gameState.ball.vy = -gameState.ball.vy;
+            const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
+            gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
+            // Removed playSound('bounce');
+        }
+    
+        // Ball collision with blocks
+        // Iterate backwards to safely remove elements during iteration
+        for (let i = gameState.blocks.length - 1; i >= 0; i--) {
+            const block = gameState.blocks[i];
+    
+            if (checkCollision(gameState.ball, block)) {
+                // This is a collision! Now handle the bounce and update block hits.
+                if (getCollisionResponse(gameState.ball, block)) {
+                    block.hits--; // Decrease the hits property
+                    if (block.hits <= 0) { // Only remove if hits are 0 or less
                         score += 10;
                         updateScore();
                         gameState.blocks.splice(i, 1);
                         gameState.blocksRemaining--;
                         // Removed playSound('block_break');
-                        break; // Stop after hitting one block to prevent multiple deletions
                     }
+                    break; // Stop after hitting one block to prevent multiple deletions
                 }
             }
-
-            // Game over if ball goes below paddle
-            if (gameState.ball.y - gameState.ball.radius > canvas.height) {
-                gameOver();
-                return;
-            }
-
-            // Win condition
-            if (gameState.blocksRemaining === 0) {
-                alert('Level Cleared! You win!'); // Consider a custom win screen later
-                gameOver(); // Call game over to stop loop and show overlay
-                return;
-            }
         }
-
-        function drawBreakout() {
-            ctx.fillStyle = '#00ff41';
-            ctx.fillRect(gameState.paddle.x, gameState.paddle.y,
-                         gameState.paddle.width, gameState.paddle.height);
-
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            gameState.blocks.forEach(block => {
-                ctx.fillStyle = block.color;
-                ctx.fillRect(block.x, block.y, block.width, block.height);
-                ctx.strokeStyle = '#222'; // Block border
-                ctx.strokeRect(block.x, block.y, block.width, block.height);
-            });
+    
+        // Game over if ball goes below paddle
+        if (gameState.ball.y - gameState.ball.radius > canvas.height) {
+            gameOver();
+            return;
         }
+    
+        // Win condition
+        if (gameState.blocksRemaining === 0) {
+            alert('Level Cleared! You win!'); // Consider a custom win screen later
+            gameOver(); // Call game over to stop loop and show overlay
+            return;
+        }
+    }
+    
+    function drawBreakout() {
+        ctx.fillStyle = '#00ff41';
+        ctx.fillRect(gameState.paddle.x, gameState.paddle.y,
+                     gameState.paddle.width, gameState.paddle.height);
+    
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+    
+        gameState.blocks.forEach(block => {
+            // You could also change the color based on the remaining hits here for visual feedback
+            // For example, make it darker with fewer hits remaining.
+            ctx.fillStyle = block.color;
+            ctx.fillRect(block.x, block.y, block.width, block.height);
+            ctx.strokeStyle = '#222'; // Block border
+            ctx.strokeRect(block.x, block.y, block.width, block.height);
+        });
+    }
 
         // --- Tetris Game ---
         const TETRIS_COLS = 10;

@@ -107,9 +107,6 @@
             transition: all 0.5s;
             opacity: 0;
         }
-        .game-card:hover::before {
-            animation: shine 0.5s ease-in-out;
-        }
         @keyframes shine {
             0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
             50% { opacity: 1; }
@@ -241,13 +238,6 @@
             box-shadow: 0 0 30px rgba(255, 0, 65, 0.6);
             animation: fadeIn 0.5s ease-out;
         }
-        .game-over-content h2 {
-            font-size: 3rem;
-            color: #ff0041;
-            text-shadow: 0 0 15px #ff0041;
-            margin-bottom: 20px;
-            animation: heartbeat 1.5s infinite;
-        }
         @keyframes heartbeat {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -312,6 +302,11 @@
         </header>
 
         <div id="gameSelection" class="games-grid">
+            <div class="game-card" onclick="startGame('dino')">
+                <h3 class="game-title">🦖 Prehistoric Run</h3>
+                <p class="game-description">Leap over cacti and dodge pterodactyls in this endless runner classic. How long can you survive the ancient world? Press SPACE to jump!</p>
+                <button class="play-btn">Play Now</button>
+            </div>
             <div class="game-card" onclick="startGame('snake')">
                 <h3 class="game-title">🐍 Neon Snake</h3>
                 <p class="game-description">Guide the glowing serpent through the digital void. Collect energy orbs to grow longer, but don't crash into yourself! Use WASD or Arrow Keys.</p>
@@ -382,7 +377,7 @@
         let animationFrameId = null; // Stores the requestAnimationFrame ID
         let canvas, ctx;
         const originalCanvasWidth = 600;
-        const originalCanvasHeight = 400;
+        const originalCanvasHeight = 400; // Updated to match your canvas size
 
         let score = 0;
         let gameState = {}; // Holds game-specific variables for the current game
@@ -399,20 +394,57 @@
                 }
                 keysPressed.add(lowerKey);
 
-                // --- MODIFIED LOGIC FOR SNAKE GAME INPUT ---
-                // For snake, update nextDirection immediately on keydown
-                if (currentGame === 'snake') {
-                    if (lowerKey === 'arrowup' || lowerKey === 'w') {
-                        changeDirection('up');
-                    } else if (lowerKey === 'arrowdown' || lowerKey === 's') {
-                        changeDirection('down');
-                    } else if (lowerKey === 'arrowleft' || lowerKey === 'a') {
-                        changeDirection('left');
-                    } else if (lowerKey === 'arrowright' || lowerKey === 'd') {
-                        changeDirection('right');
-                    }
+                // --- Game-specific input handling ---
+                switch (currentGame) {
+                    case 'snake':
+                        if (lowerKey === 'arrowup' || lowerKey === 'w') {
+                            changeDirection('up');
+                        } else if (lowerKey === 'arrowdown' || lowerKey === 's') {
+                            changeDirection('down');
+                        } else if (lowerKey === 'arrowleft' || lowerKey === 'a') {
+                            changeDirection('left');
+                        } else if (lowerKey === 'arrowright' || lowerKey === 'd') {
+                            changeDirection('right');
+                        }
+                        break;
+                    case 'dino':
+                        if (lowerKey === ' ' && !gameState.dino.isJumping) {
+                            gameState.dino.jump();
+                        }
+                        break;
+                    case 'pong':
+                        // Pong movement is continuous, controlled by keysPressed in updatePong
+                        break;
+                    case 'asteroids': // Asteroids input
+                         if (lowerKey === ' ') {
+                            // lastShotTimeAsteroids is used in shootBulletAsteroids to handle cooldown
+                            // shootBulletAsteroids will check cooldown internally
+                            shootBulletAsteroids();
+                        }
+                        // Thrust and rotation are handled by checking keysPressed in updateAsteroids
+                        break;
+                    case 'breakout': // Breakout input
+                        // Paddle movement handled by keysPressed in updateBreakout
+                        break;
+                    case 'tetris': // Tetris input
+                        // Logic for Tetris input handling is largely within updateTetris,
+                        // but hard drop and rotate are triggered on keydown to prevent continuous action.
+                        if (lowerKey === 'arrowup' || lowerKey === 'w') {
+                            // Check if the key was just pressed, not held down
+                            if (!e.repeat) {
+                                rotatePiece(gameState.currentPiece, 1);
+                            }
+                        } else if (lowerKey === ' ') {
+                            if (!e.repeat) {
+                                // Hard drop: instantly move piece down as far as it can go
+                                while (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY + 1)) {
+                                    gameState.pieceY++;
+                                }
+                                lockPiece();
+                            }
+                        }
+                        break;
                 }
-                // --- END MODIFIED LOGIC ---
             }
         });
 
@@ -429,16 +461,17 @@
             lastFrameTime = currentTime;
 
             // Clear canvas at the beginning of each frame
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = '#000'; // Default background for all games
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Update and draw specific game
             switch(currentGame) {
+                case 'dino': updateDino(deltaTime); drawDino(); break;
                 case 'snake': updateSnake(deltaTime); drawSnake(); break;
                 case 'pong': updatePong(deltaTime); drawPong(); break;
                 case 'asteroids': updateAsteroids(deltaTime); drawAsteroids(); break;
                 case 'breakout': updateBreakout(deltaTime); drawBreakout(); break;
-                case 'tetris': updateTetris(deltaTime); drawTetris(); break; // ADDED TETRIS
+                case 'tetris': updateTetris(deltaTime); drawTetris(); break;
             }
 
             // Continue the loop
@@ -462,21 +495,79 @@
             ctx = canvas.getContext('2d');
 
             // Reset canvas width/height to original for games that don't need specific sizes
+            // This needs to happen BEFORE game-specific init, as init functions might set their own sizes.
             canvas.width = originalCanvasWidth;
             canvas.height = originalCanvasHeight;
-            canvas.style.marginLeft = ''; // Clear Tetris specific centering
-            canvas.style.marginRight = '';
+            canvas.style.marginLeft = 'auto'; // Default to center
+            canvas.style.marginRight = 'auto'; // Default to center
+            canvas.style.width = 'auto'; // Reset custom width from Tetris if coming from it
+            canvas.style.height = 'auto'; // Reset custom height from Tetris if coming from it
 
-            currentGame = gameType;
+
+            document.getElementById('gameTitle').textContent = getGameTitle(gameType);
+            setupControls(gameType); // Call setupControls to set specific instructions
+
+            // Reset score for new game
             score = 0;
-            keysPressed.clear(); // Clear any lingering key states
-
             updateScore();
-            initializeGame(gameType);
+            keysPressed.clear(); // Clear any lingering key states
+            
+            // Initialize game state specific to each game type
+            gameState = {}; // Clear previous game state
+            currentGame = gameType; // Set current game before initializing
+            switch(gameType) {
+                case 'dino': initDino(); break;
+                case 'snake': initSnake(); break;
+                case 'pong': initPong(); break;
+                case 'asteroids': initAsteroids(); break;
+                case 'breakout': initBreakout(); break;
+                case 'tetris': initTetris(); break;
+            }
 
             lastFrameTime = performance.now(); // Initialize for the first frame
             animationFrameId = requestAnimationFrame(gameLoop); // Start the new game loop
         }
+
+        function gameOver() {
+            // Stop the game loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Show game over overlay
+            document.getElementById('gameOverOverlay').classList.add('active');
+            document.getElementById('finalScoreDisplay').textContent = `Final Score: ${score}`;
+
+            // Optional: Handle high score for individual games if desired
+            if (currentGame === 'dino') {
+                let dinoHighScore = localStorage.getItem('dinoHighScore') || 0;
+                if (score > dinoHighScore) {
+                    localStorage.setItem('dinoHighScore', score);
+                }
+            } else if (currentGame === 'pong') {
+                let pongHighScore = localStorage.getItem('pongHighScore') || 0;
+                if (score > pongHighScore) {
+                    localStorage.setItem('pongHighScore', score);
+                }
+            } else if (currentGame === 'asteroids') {
+                let asteroidsHighScore = localStorage.getItem('asteroidsHighScore') || 0;
+                if (score > asteroidsHighScore) {
+                    localStorage.setItem('asteroidsHighScore', score);
+                }
+            } else if (currentGame === 'breakout') {
+                let breakoutHighScore = localStorage.getItem('breakoutHighScore') || 0;
+                if (score > breakoutHighScore) {
+                    localStorage.setItem('breakoutHighScore', score);
+                }
+            } else if (currentGame === 'tetris') { // New: Tetris high score
+                let tetrisHighScore = localStorage.getItem('tetrisHighScore') || 0;
+                if (score > tetrisHighScore) {
+                    localStorage.setItem('tetrisHighScore', score);
+                }
+            }
+        }
+
 
         function restartGame() {
             if (animationFrameId) {
@@ -520,7 +611,7 @@
             document.getElementById('gameArea').style.display = 'none';
             document.getElementById('gameSelection').style.display = 'grid';
             currentGame = null;
-            score = 0;
+            score = 0; // Reset score when going back to menu
             updateScore();
             keysPressed.clear();
         }
@@ -537,6 +628,8 @@
             canvas.height = originalCanvasHeight;
             canvas.style.marginLeft = 'auto'; // Default to center
             canvas.style.marginRight = 'auto'; // Default to center
+            canvas.style.width = 'auto'; // Reset custom width from Tetris if coming from it
+            canvas.style.height = 'auto'; // Reset custom height from Tetris if coming from it
 
 
             document.getElementById('gameTitle').textContent = getGameTitle(gameType);
@@ -544,21 +637,23 @@
 
             // Initialize game state specific to each game type
             switch(gameType) {
+                case 'dino': initDino(); break;
                 case 'snake': initSnake(); break;
                 case 'pong': initPong(); break;
                 case 'asteroids': initAsteroids(); break;
                 case 'breakout': initBreakout(); break;
-                case 'tetris': initTetris(); break; // ADDED TETRIS
+                case 'tetris': initTetris(); break;
             }
         }
 
         function getGameTitle(gameType) {
             const titles = {
+                dino: '🦖 Prehistoric Run',
                 snake: '🐍 Neon Snake',
                 pong: '⚡ Cyber Pong',
                 asteroids: '💫 Space Rocks',
                 breakout: '🧱 Block Destroyer',
-                tetris: '🟦 Pixel Tetris' // ADDED TETRIS
+                tetris: '🟦 Pixel Tetris'
             };
             return titles[gameType];
         }
@@ -570,6 +665,9 @@
 
             let instructions = '';
             switch (gameType) {
+                case 'dino':
+                    instructions = 'Press **SPACEBAR** to jump over obstacles.';
+                    break;
                 case 'snake':
                     instructions = 'Use **WASD** or **Arrow Keys** to change snake direction.';
                     break;
@@ -582,7 +680,7 @@
                 case 'breakout':
                     instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your paddle.';
                     break;
-                case 'tetris': // ADDED TETRIS
+                case 'tetris':
                     instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.';
                     break;
                 default:
@@ -590,6 +688,163 @@
             }
             controlsDiv.innerHTML = `<p>${instructions}</p>`;
         }
+
+
+        // --- Dino Game ---
+        // Constants for Dino game rendering
+        const DINO_Y_OFFSET = 5; // Distance from the bottom of the canvas for ground line
+        const DINO_HEIGHT_DEFAULT = 50; // Dino default height on the 400px canvas
+        const DINO_WIDTH_DEFAULT = 30; // Dino default width
+        const GROUND_LINE_Y = originalCanvasHeight - DINO_Y_OFFSET;
+
+
+        function initDino() {
+            // Adjust dino initial position for the 400px height canvas
+            gameState.dino = {
+                x: 50,
+                y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT,
+                width: DINO_WIDTH_DEFAULT,
+                height: DINO_HEIGHT_DEFAULT,
+                dy: 0,
+                gravity: 0.5,
+                jumpStrength: -10,
+                isJumping: false,
+                draw() {
+                    ctx.fillStyle = '#00ff41'; // Bright green for dino
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                    // Simple dino head/neck for character
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width, this.y + this.height * 0.2, this.width * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width + 5, this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#1a1a2e'; // Eye color
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                },
+                jump() {
+                    if (!this.isJumping) {
+                        this.dy = this.jumpStrength;
+                        this.isJumping = true;
+                    }
+                },
+                update() {
+                    this.dy += this.gravity;
+                    this.y += this.dy;
+
+                    if (this.y + this.height > GROUND_LINE_Y) {
+                        this.y = GROUND_LINE_Y - this.height;
+                        this.dy = 0;
+                        this.isJumping = false;
+                    }
+                }
+            };
+
+            gameState.obstacles = [];
+            gameState.gameSpeed = 5;
+            gameState.obstacleSpawnTimer = 0;
+            gameState.obstacleSpawnInterval = 1500; // milliseconds
+
+            // High score is now shown by the game selection page, but we store it.
+            // localStorage.setItem('dinoHighScore', localStorage.getItem('dinoHighScore') || 0);
+        }
+
+        function createDinoObstacle() {
+            const obstacleTypes = [
+                { width: 20, height: 40, color: '#ff0041' }, // Cactus 1
+                { width: 30, height: 60, color: '#ff0041' }, // Cactus 2
+                { width: 45, height: 25, color: '#ff0041', isFlying: true, yOffset: 100 } // Pterodactyl-like
+            ];
+            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+
+            gameState.obstacles.push({
+                x: canvas.width,
+                y: type.isFlying ? (GROUND_LINE_Y - type.height - type.yOffset) : (GROUND_LINE_Y - type.height),
+                width: type.width,
+                height: type.height,
+                color: type.color,
+                draw() {
+                    ctx.fillStyle = this.color;
+                    // For pterodactyl, draw a simple shape
+                    if (type.isFlying) {
+                         ctx.beginPath();
+                         ctx.moveTo(this.x, this.y + this.height * 0.5);
+                         ctx.lineTo(this.x + this.width, this.y);
+                         ctx.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.5);
+                         ctx.lineTo(this.x + this.width, this.y + this.height);
+                         ctx.lineTo(this.x, this.y + this.height * 0.5);
+                         ctx.fill();
+                    } else {
+                        ctx.fillRect(this.x, this.y, this.width, this.height);
+                    }
+                }
+            });
+        }
+
+        function updateDino(deltaTime) {
+            // Update obstacles
+            for (let i = 0; i < gameState.obstacles.length; i++) {
+                gameState.obstacles[i].x -= gameState.gameSpeed;
+
+                // Collision detection
+                const dino = gameState.dino;
+                const obstacle = gameState.obstacles[i];
+
+                if (
+                    dino.x < obstacle.x + obstacle.width &&
+                    dino.x + dino.width > obstacle.x &&
+                    dino.y < obstacle.y + obstacle.height &&
+                    dino.y + dino.height > obstacle.y
+                ) {
+                    gameOver();
+                    return; // Stop update if game over
+                }
+            }
+
+            // Filter out off-screen obstacles
+            gameState.obstacles = gameState.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
+
+            // Spawn new obstacles
+            gameState.obstacleSpawnTimer += deltaTime * 1000; // Convert to milliseconds
+            if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
+                createDinoObstacle();
+                gameState.obstacleSpawnTimer = 0;
+                // Gradually increase game speed and decrease spawn interval
+                gameState.gameSpeed += 0.01;
+                gameState.obstacleSpawnInterval = Math.max(800, gameState.obstacleSpawnInterval - 5);
+            }
+
+            // Update dino physics
+            gameState.dino.update();
+
+            // Update score
+            score++;
+            updateScore(); // Use the global updateScore function
+        }
+
+        function drawDino() {
+            // Draw ground line
+            ctx.strokeStyle = '#00ff41'; // Green ground line
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_LINE_Y);
+            ctx.lineTo(canvas.width, GROUND_LINE_Y);
+            ctx.stroke();
+
+            // Draw dino
+            gameState.dino.draw();
+
+            // Draw obstacles
+            for (let obstacle of gameState.obstacles) {
+                obstacle.draw();
+            }
+        }
+        // --- End Dino Game ---
 
 
         // --- Snake Game ---
@@ -600,23 +855,19 @@
                 direction: {x: 1, y: 0},
                 nextDirection: {x: 1, y: 0}, // For smooth input queueing
                 gridSize: 20,
-                speed: 10 // Grid units per second
+                speed: 10, // Grid units per second
+                timeSinceLastMove: 0 // Initialize this for Snake game
             };
             spawnFood();
         }
 
         function updateSnake(deltaTime) {
             const moveInterval = 1 / gameState.speed; // Time in seconds for one grid unit move
-            if (!gameState.hasOwnProperty('timeSinceLastMove')) {
-                gameState.timeSinceLastMove = 0;
-            }
             gameState.timeSinceLastMove += deltaTime;
 
             if (gameState.timeSinceLastMove >= moveInterval) {
                 gameState.timeSinceLastMove -= moveInterval;
 
-                // The direction is now updated by the keydown event listener.
-                // We just apply the queued nextDirection here.
                 gameState.direction = gameState.nextDirection;
                 
                 const head = {
@@ -648,7 +899,7 @@
                     updateScore();
                     // Increase speed slightly with score
                     if (gameState.speed < 20) gameState.speed += 0.5;
-                    spawnFood(); // Spawn after speed increase, so food doesn't disappear if snake gets too fast
+                    spawnFood();
                 } else {
                     gameState.snake.pop();
                 }
@@ -676,7 +927,7 @@
 
             ctx.fillStyle = '#ff0041';
             ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize,
-                         gameState.gridSize - 2, gameState.gridSize - 2);
+                             gameState.gridSize - 2, gameState.gridSize - 2);
         }
 
         function changeDirection(dir) {
@@ -690,13 +941,11 @@
             };
 
             const newDir = directions[dir];
-            // Only allow changing direction if it's not directly opposite the current direction
-            // (e.g., cannot go directly from right to left)
             if (newDir && (newDir.x !== -gameState.direction.x || newDir.y !== -gameState.direction.y)) {
                 gameState.nextDirection = newDir;
             }
         }
-
+        // --- End Snake Game ---
 
         // --- Pong Game ---
         function initPong() {
@@ -705,6 +954,8 @@
                 paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: 150},
                 ball: {x: canvas.width/2, y: canvas.height/2, dx: 275, dy: 275, radius: 8} // speed in pixels/sec
             };
+            score = 0; // Reset score for Pong game
+            updateScore();
         }
 
         function updatePong(deltaTime) {
@@ -743,7 +994,6 @@
                 
                 gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25); // Slight random vertical deflection
-                updateScore();
                 // Removed playSound('bounce');
             }
             // Paddle 2 (AI)
@@ -762,14 +1012,14 @@
 
             // Ball out of bounds (score for AI or game over for player)
             if (gameState.ball.x < 0) {
-                gameOver();
+                gameOver(); // Player loses a life or game over
                 return;
             } else if (gameState.ball.x > canvas.width) {
                  gameState.ball.x = canvas.width/2;
                  gameState.ball.y = canvas.height/2;
                  gameState.ball.dx = (Math.random() > 0.5 ? 1 : -1) * 180; // Reset speed and direction
                  gameState.ball.dy = (Math.random() > 0.5 ? 1 : -1) * 180;
-                 score += 1;
+                 score += 1; // AI scores
                  updateScore();
                  // Removed playSound('score');
             }
@@ -784,31 +1034,32 @@
         }
 
         function drawPong() {
-            ctx.fillStyle = '#00ff41';
+            ctx.fillStyle = '#00ff41'; // Player paddle color
             ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y,
                          gameState.paddle1.width, gameState.paddle1.height);
-            ctx.fillStyle = '#ff0041';
+            ctx.fillStyle = '#ff0041'; // AI paddle color
             ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y,
                          gameState.paddle2.width, gameState.paddle2.height);
 
-            ctx.fillStyle = '#00ffff';
+            ctx.fillStyle = '#00ffff'; // Ball color
             ctx.beginPath();
             ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
             ctx.fill();
 
+            // Draw center dashed line
             ctx.strokeStyle = '#00ff41';
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
             ctx.moveTo(canvas.width/2, 0);
             ctx.lineTo(canvas.width/2, canvas.height);
             ctx.stroke();
-            ctx.setLineDash([]);
+            ctx.setLineDash([]); // Reset line dash to avoid affecting other drawings
         }
-
+        // --- End Pong Game ---
 
         // --- Asteroids Game ---
         const ASTEROIDS_SHOOT_COOLDOWN = 0.2; // seconds
-        let lastShotTimeAsteroids = 0;
+        let lastShotTimeAsteroids = 0; // Global variable to track last shot time for asteroids
 
         function initAsteroids() {
             gameState = {
@@ -820,6 +1071,8 @@
             for (let i = 0; i < 5; i++) {
                 spawnAsteroid(3); // Start with large asteroids
             }
+            score = 0; // Reset score for Asteroids game
+            updateScore();
         }
 
         function updateAsteroids(deltaTime) {
@@ -835,9 +1088,9 @@
                 gameState.ship.angle += gameState.ship.rotationSpeed * deltaTime;
             }
             // For desktop spacebar, shoot still
-            if (keysPressed.has(' ')) { 
-                shootBulletAsteroids();
-            }
+            // The actual shootBulletAsteroids function is called from keydown, but we keep this here
+            // in case continuous firing is desired by holding down space.
+            // However, current implementation calls shootBulletAsteroids on keydown only.
 
             // Update ship position and apply friction
             gameState.ship.x += gameState.ship.vx * deltaTime;
@@ -887,7 +1140,7 @@
                             spawnAsteroid(asteroid.size - 1, asteroid.x, asteroid.y);
                         }
                         gameState.asteroids.splice(aIndex, 1);
-                        break;
+                        break; // Break from inner loop as bullet is destroyed
                     }
                 }
             }
@@ -896,15 +1149,15 @@
             for (let asteroid of gameState.asteroids) {
                 const dx = gameState.ship.x - asteroid.x;
                 const dy = gameState.ship.y - asteroid.y;
-                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + 10) {
+                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + 10) { // +10 for ship's rough radius
                     gameOver();
-                    return;
+                    return; // Stop update if game over
                 }
             }
 
             // Respawn asteroids if all are destroyed
             if (gameState.asteroids.length === 0) {
-                const levelMultiplier = Math.floor(score / 500) + 1;
+                const levelMultiplier = Math.floor(score / 500) + 1; // Increase difficulty
                 for (let i = 0; i < 5 + levelMultiplier; i++) {
                     spawnAsteroid(3); // Spawn large asteroids
                 }
@@ -916,19 +1169,19 @@
             ctx.save();
             ctx.translate(gameState.ship.x, gameState.ship.y);
             ctx.rotate(gameState.ship.angle);
-            ctx.strokeStyle = '#00ff41';
+            ctx.strokeStyle = '#00ff41'; // Ship color
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(15, 0);
-            ctx.lineTo(-10, -10);
-            ctx.lineTo(-5, 0);
-            ctx.lineTo(-10, 10);
+            ctx.moveTo(15, 0);      // Nose
+            ctx.lineTo(-10, -10);   // Back left
+            ctx.lineTo(-5, 0);      // Middle back (for gap)
+            ctx.lineTo(-10, 10);    // Back right
             ctx.closePath();
             ctx.stroke();
             ctx.restore();
 
             // Draw Bullets
-            ctx.fillStyle = '#00ffff';
+            ctx.fillStyle = '#00ffff'; // Bullet color
             gameState.bullets.forEach(bullet => {
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, 2, 0, Math.PI * 2);
@@ -936,7 +1189,7 @@
             });
 
             // Draw Asteroids
-            ctx.strokeStyle = '#ff4444';
+            ctx.strokeStyle = '#ff4444'; // Asteroid color
             ctx.lineWidth = 2;
             gameState.asteroids.forEach(asteroid => {
                 ctx.beginPath();
@@ -954,7 +1207,7 @@
                     vx: Math.cos(gameState.ship.angle) * 300 + gameState.ship.vx, // Bullet speed (pixels/sec) + ship's current velocity
                     vy: Math.sin(gameState.ship.angle) * 300 + gameState.ship.vy
                 });
-                lastShotTimeAsteroids = currentTime;
+                lastShotTimeAsteroids = currentTime; // Update last shot time
             }
         }
 
@@ -978,8 +1231,8 @@
             let asteroidX = x !== null ? x : Math.random() * canvas.width;
             let asteroidY = y !== null ? y : Math.random() * canvas.height;
 
-            // Ensure initial large asteroids don't spawn too close to the ship
-            if (size === 3 && x === null) {
+            // Ensure initial large asteroids don't spawn too close to the ship (only for initial spawn, not for broken pieces)
+            if (size === 3 && x === null && gameState.ship) { // Check gameState.ship exists for first spawn
                 while (Math.sqrt(Math.pow(asteroidX - gameState.ship.x, 2) + Math.pow(asteroidY - gameState.ship.y, 2)) < 150) {
                     asteroidX = Math.random() * canvas.width;
                     asteroidY = Math.random() * canvas.height;
@@ -990,38 +1243,40 @@
             gameState.asteroids.push({
                 x: asteroidX,
                 y: asteroidY,
-                vx: (Math.random() - 0.5) * asteroidSpeed,
-                vy: (Math.random() - 0.5) * asteroidSpeed,
+                vx: (Math.random() - 0.5) * asteroidSpeed, // Random direction
+                vy: (Math.random() - 0.5) * asteroidSpeed, // Random direction
                 radius: asteroidRadius,
                 size: size // 3: large, 2: medium, 1: small
             });
         }
+        // --- End Asteroids Game ---
 
 
         // --- Breakout Game ---
         function initBreakout() {
             gameState = {
                 paddle: {x: canvas.width/2 - 50, y: canvas.height - 20, width: 100, height: 10, speed: 250}, // Pixels/sec
-                ball: {x: canvas.width/2, y: canvas.height - 30, vx: 180, vy: -180, radius: 8}, // Pixels/sec
+                ball: {x: canvas.width/2, y: canvas.height - 30, vx: 180, vy: -180, radius: 8, prevX: 0, prevY: 0}, // Added prevX, prevY
                 blocks: [],
                 blocksRemaining: 0
             };
-        
+            
             const blockWidth = 55;
             const blockHeight = 15;
             const blockPadding = 5;
             const blockOffsetTop = 50;
-            const blockOffsetLeft = (canvas.width - (10 * blockWidth + 9 * blockPadding)) / 2;
-        
+            const blocksPerRow = 10;
+            const blockOffsetLeft = (canvas.width - (blocksPerRow * blockWidth + (blocksPerRow - 1) * blockPadding)) / 2;
+            
             for (let row = 0; row < 5; row++) { // 'row' goes from 0 to 4
-                for (let col = 0; col < 10; col++) {
+                for (let col = 0; col < blocksPerRow; col++) {
                     gameState.blocks.push({
                         x: col * (blockWidth + blockPadding) + blockOffsetLeft,
                         y: row * (blockHeight + blockPadding) + blockOffsetTop,
                         width: blockWidth,
                         height: blockHeight,
                         color: `hsl(${row * 50}, 100%, 50%)`,
-                        // THIS IS THE UPDATED KEY CHANGE:
+                        // hits property for multi-hit blocks:
                         // For row 0 (front): 5 - 0 = 5 hits
                         // For row 1: 5 - 1 = 4 hits
                         // For row 2: 5 - 2 = 3 hits
@@ -1032,158 +1287,165 @@
                     gameState.blocksRemaining++;
                 }
             }
+            score = 0; // Reset score for Breakout game
+            updateScore();
         }
 
-    // Helper function to check AABB collision
-    function checkCollision(ball, rect) {
-        // Check if ball is touching or overlapping rect
-        return ball.x + ball.radius > rect.x &&
-               ball.x - ball.radius < rect.x + rect.width &&
-               ball.y + ball.radius > rect.y &&
-               ball.y - ball.radius < rect.y + rect.height;
-    }
-    
-    // Helper function to get point of impact and normal
-    function getCollisionResponse(ball, block) {
-        let hitX = false; // Did it hit horizontally?
-        let hitY = false; // Did it hit vertically?
-    
-        // Determine if horizontal or vertical collision occurred
-        // Check if ball was outside horizontally and moved inside
-        if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
-            ball.x = block.x - ball.radius; // Reposition
-            ball.vx *= -1;
-            hitX = true;
-        } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
-            ball.x = block.x + block.width + ball.radius; // Reposition
-            ball.vx *= -1;
-            hitX = true;
+        // Helper function to check AABB collision
+        function checkCollision(ball, rect) {
+            // Check if ball is touching or overlapping rect
+            return ball.x + ball.radius > rect.x &&
+                   ball.x - ball.radius < rect.x + rect.width &&
+                   ball.y + ball.radius > rect.y &&
+                   ball.y - ball.radius < rect.y + rect.height;
         }
-    
-        // Check if ball was outside vertically and moved inside
-        if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
-            ball.y = block.y - ball.radius; // Reposition
-            ball.vy *= -1;
-            hitY = true;
-        } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
-            ball.y = block.y + block.height + ball.radius; // Reposition
-            ball.vy *= -1;
-            hitY = true;
-        }
-    
-        // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
-        // For simplicity in Breakout, usually one axis dominates.
-        // This basic logic handles the most common cases correctly.
         
-        return hitX || hitY; // Return true if any collision occurred
-    }
-    
-    
-    function updateBreakout(deltaTime) {
-        // Paddle movement
-        if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-            gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime);
+        // Helper function to get point of impact and normal
+        function getCollisionResponse(ball, block) {
+            let hitX = false; // Did it hit horizontally?
+            let hitY = false; // Did it hit vertically?
+        
+            // Determine if horizontal or vertical collision occurred
+            // Check if ball was outside horizontally and moved inside
+            if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
+                ball.x = block.x - ball.radius; // Reposition
+                ball.vx *= -1;
+                hitX = true;
+            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
+                ball.x = block.x + block.width + ball.radius; // Reposition
+                ball.vx *= -1;
+                hitX = true;
+            }
+        
+            // Check if ball was outside vertically and moved inside
+            if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
+                ball.y = block.y - ball.radius; // Reposition
+                ball.vy *= -1;
+                hitY = true;
+            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
+                ball.y = block.y + block.height + ball.radius; // Reposition
+                ball.vy *= -1;
+                hitY = true;
+            }
+        
+            // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
+            // For simplicity in Breakout, usually one axis dominates.
+            // This basic logic handles the most common cases correctly.
+            
+            return hitX || hitY; // Return true if any collision occurred
         }
-        if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-            gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
-        }
-    
-        // Store previous ball position for more accurate collision detection
-        gameState.ball.prevX = gameState.ball.x;
-        gameState.ball.prevY = gameState.ball.y;
-    
-        // Ball movement
-        gameState.ball.x += gameState.ball.vx * deltaTime;
-        gameState.ball.y += gameState.ball.vy * deltaTime;
-    
-        // Ball collision with walls
-        if (gameState.ball.x - gameState.ball.radius <= 0) {
-            gameState.ball.x = gameState.ball.radius; // Reposition
-            gameState.ball.vx = -gameState.ball.vx;
-            // Removed playSound('bounce');
-        } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
-            gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
-            gameState.ball.vx = -gameState.ball.vx;
-            // Removed playSound('bounce');
-        }
-    
-        if (gameState.ball.y - gameState.ball.radius <= 0) {
-            gameState.ball.y = gameState.ball.radius; // Reposition
-            gameState.ball.vy = -gameState.ball.vy;
-            // Removed playSound('bounce');
-        }
-    
-        // Ball collision with paddle
-        // Check if ball hit the paddle from above (moving downwards)
-        if (gameState.ball.vy > 0 &&
-            gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
-            gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
-            gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
-            gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
-        {
-            // Reposition the ball on top of the paddle to prevent sticking
-            gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
-    
-            gameState.ball.vy = -gameState.ball.vy;
-            const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
-            gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
-            // Removed playSound('bounce');
-        }
-    
-        // Ball collision with blocks
-        // Iterate backwards to safely remove elements during iteration
-        for (let i = gameState.blocks.length - 1; i >= 0; i--) {
-            const block = gameState.blocks[i];
-    
-            if (checkCollision(gameState.ball, block)) {
-                // This is a collision! Now handle the bounce and update block hits.
-                if (getCollisionResponse(gameState.ball, block)) {
-                    block.hits--; // Decrease the hits property
-                    if (block.hits <= 0) { // Only remove if hits are 0 or less
-                        score += 10;
-                        updateScore();
-                        gameState.blocks.splice(i, 1);
-                        gameState.blocksRemaining--;
-                        // Removed playSound('block_break');
+        
+        
+        function updateBreakout(deltaTime) {
+            // Paddle movement
+            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
+                gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime);
+            }
+            if (keysPressed.has('arrowright') || keysPressed.has('d')) {
+                gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
+            }
+        
+            // Store previous ball position for more accurate collision detection
+            gameState.ball.prevX = gameState.ball.x;
+            gameState.ball.prevY = gameState.ball.y;
+        
+            // Ball movement
+            gameState.ball.x += gameState.ball.vx * deltaTime;
+            gameState.ball.y += gameState.ball.vy * deltaTime;
+        
+            // Ball collision with walls
+            if (gameState.ball.x - gameState.ball.radius <= 0) {
+                gameState.ball.x = gameState.ball.radius; // Reposition
+                gameState.ball.vx = -gameState.ball.vx;
+                // Removed playSound('bounce');
+            } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
+                gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
+                ball.vx = -gameState.ball.vx;
+                // Removed playSound('bounce');
+            }
+        
+            if (gameState.ball.y - gameState.ball.radius <= 0) {
+                gameState.ball.y = gameState.ball.radius; // Reposition
+                gameState.ball.vy = -gameState.ball.vy;
+                // Removed playSound('bounce');
+            }
+        
+            // Ball collision with paddle
+            // Check if ball hit the paddle from above (moving downwards)
+            if (gameState.ball.vy > 0 &&
+                gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
+                gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
+                gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
+                gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
+            {
+                // Reposition the ball on top of the paddle to prevent sticking
+                gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
+            
+                gameState.ball.vy = -gameState.ball.vy;
+                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
+                gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
+                // Removed playSound('bounce');
+            }
+        
+            // Ball collision with blocks
+            // Iterate backwards to safely remove elements during iteration
+            for (let i = gameState.blocks.length - 1; i >= 0; i--) {
+                const block = gameState.blocks[i];
+            
+                if (checkCollision(gameState.ball, block)) {
+                    // This is a collision! Now handle the bounce and update block hits.
+                    if (getCollisionResponse(gameState.ball, block)) {
+                        block.hits--; // Decrease the hits property
+                        if (block.hits <= 0) { // Only remove if hits are 0 or less
+                            score += 10;
+                            updateScore();
+                            gameState.blocks.splice(i, 1);
+                            gameState.blocksRemaining--;
+                            // Removed playSound('block_break');
+                        }
+                        // If the block is not destroyed, its color might change based on hits remaining
+                        // This logic could be added in drawBreakout based on block.hits
+
+                        break; // Stop after hitting one block to prevent multiple deletions
                     }
-                    break; // Stop after hitting one block to prevent multiple deletions
                 }
             }
+        
+            // Game over if ball goes below paddle
+            if (gameState.ball.y - gameState.ball.radius > canvas.height) {
+                gameOver();
+                return;
+            }
+        
+            // Win condition
+            if (gameState.blocksRemaining === 0) {
+                // Removed alert, now it will just trigger the standard gameOver overlay
+                gameOver(); // Call game over to stop loop and show overlay
+                return;
+            }
         }
-    
-        // Game over if ball goes below paddle
-        if (gameState.ball.y - gameState.ball.radius > canvas.height) {
-            gameOver();
-            return;
+        
+        function drawBreakout() {
+            ctx.fillStyle = '#00ff41'; // Paddle color
+            ctx.fillRect(gameState.paddle.x, gameState.paddle.y,
+                         gameState.paddle.width, gameState.paddle.height);
+        
+            ctx.fillStyle = '#00ffff'; // Ball color
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+        
+            gameState.blocks.forEach(block => {
+                // You could also change the color based on the remaining hits here for visual feedback
+                // For example, make it darker or a different shade with fewer hits remaining.
+                ctx.fillStyle = block.color;
+                ctx.fillRect(block.x, block.y, block.width, block.height);
+                ctx.strokeStyle = '#222'; // Block border
+                ctx.strokeRect(block.x, block.y, block.width, block.height);
+            });
         }
-    
-        // Win condition
-        if (gameState.blocksRemaining === 0) {
-            alert('Level Cleared! You win!'); // Consider a custom win screen later
-            gameOver(); // Call game over to stop loop and show overlay
-            return;
-        }
-    }
-    
-    function drawBreakout() {
-        ctx.fillStyle = '#00ff41';
-        ctx.fillRect(gameState.paddle.x, gameState.paddle.y,
-                     gameState.paddle.width, gameState.paddle.height);
-    
-        ctx.fillStyle = '#00ffff';
-        ctx.beginPath();
-        ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
-    
-        gameState.blocks.forEach(block => {
-            // You could also change the color based on the remaining hits here for visual feedback
-            // For example, make it darker with fewer hits remaining.
-            ctx.fillStyle = block.color;
-            ctx.fillRect(block.x, block.y, block.width, block.height);
-            ctx.strokeStyle = '#222'; // Block border
-            ctx.strokeRect(block.x, block.y, block.width, block.height);
-        });
-    }
+        // --- End Breakout Game ---
+
 
         // --- Tetris Game ---
         const TETRIS_COLS = 10;
@@ -1258,6 +1520,10 @@
             // Center the canvas in the game area
             canvas.style.marginLeft = 'auto';
             canvas.style.marginRight = 'auto';
+            // Explicitly set style width/height to prevent scaling issues if canvas.width/height is smaller than container
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+
 
             gameState = {
                 board: Array(TETRIS_ROWS).fill(0).map(() => Array(TETRIS_COLS).fill(0)), // 0 for empty, values for colors
@@ -1265,11 +1531,12 @@
                 nextPiece: null, // Future feature: next piece display
                 pieceX: 0,
                 pieceY: 0,
+                currentPieceColor: '', // Store the color for the current piece
                 dropCounter: 0,
                 dropInterval: 1, // seconds
                 level: 1,
                 linesCleared: 0,
-                score: 0,
+                score: 0, // Tetris specific score, but it feeds into global score
                 isGameOver: false,
                 lastMoveTime: 0 // To prevent rapid horizontal movement
             };
@@ -1278,6 +1545,8 @@
             // Start the drop process
             gameState.dropCounter = 0;
             gameState.lastMoveTime = performance.now(); // Initialize for input handling
+            score = 0; // Reset global score for Tetris game
+            updateScore();
         }
 
         function generateNewPiece() {
@@ -1305,11 +1574,11 @@
                         const boardX = x + offsetX;
                         const boardY = y + offsetY;
 
-                        if (boardY >= TETRIS_ROWS || boardX < 0 || boardX >= TETRIS_COLS) {
+                        if (boardX < 0 || boardX >= TETRIS_COLS || boardY >= TETRIS_ROWS) {
                             return true; // Collision with walls or floor
                         }
-                        if (boardY < 0) { // Above board (starting position)
-                            continue; // No collision check needed if still in negative Y
+                        if (boardY < 0) { // Above board (starting position), no collision check with existing blocks
+                            continue;
                         }
                         if (board[boardY] && board[boardY][boardX] !== 0) {
                             return true; // Collision with another placed block
@@ -1324,7 +1593,8 @@
         function rotatePiece(piece, dir) {
             // dir = 1 for clockwise, -1 for counter-clockwise (not fully implemented for -1)
             // Clockwise rotation by transposing and reversing rows
-            const newPiece = piece.map((row, y) => row.map((val, x) => piece[piece.length - 1 - x][y]));
+            const originalPiece = JSON.parse(JSON.stringify(piece)); // Keep original for rollback
+            let newPiece = originalPiece.map((row, y) => row.map((val, x) => originalPiece[originalPiece.length - 1 - x][y]));
 
             // If dir is -1 (counter-clockwise), rotate 3 times clockwise
             if (dir === -1) {
@@ -1358,8 +1628,8 @@
         function lockPiece() {
             for (let y = 0; y < gameState.currentPiece.length; y++) {
                 for (let x = 0; x < gameState.currentPiece[y].length; x++) {
-                    if (gameState.currentPiece[y][x] !== 0) {
-                        // Check if it's within bounds before assigning
+                    if (gameState.currentPiece[y][x] !== 0) { // If it's a solid block of the piece
+                        // Check if it's within bounds before assigning to prevent errors on game over condition
                         if (gameState.pieceY + y >= 0 && gameState.pieceY + y < TETRIS_ROWS &&
                             gameState.pieceX + x >= 0 && gameState.pieceX + x < TETRIS_COLS) {
                             gameState.board[gameState.pieceY + y][gameState.pieceX + x] = gameState.currentPieceColor; // Store the color with the block
@@ -1371,21 +1641,50 @@
             generateNewPiece();
         }
 
-        // --- Tetris Clear Lines ---
+        // --- Tetris Clear Lines (Refactored for robustness) ---
         function clearLines() {
             let linesClearedThisTurn = 0;
-            outer: for (let y = TETRIS_ROWS - 1; y >= 0; y--) {
-                for (let x = 0; x < TETRIS_COLS; x++) {
-                    if (gameState.board[y][x] === 0) {
-                        continue outer; // Not a full line, move to next row
-                    }
+            const linesToKeep = []; // Will store only the rows that are NOT full
+
+            // Iterate from the bottom of the board upwards
+            for (let y = TETRIS_ROWS - 1; y >= 0; y--) {
+                // Check if the current row 'y' is full (contains no empty blocks)
+                const isLineFull = gameState.board[y].every(block => block !== 0);
+
+                if (!isLineFull) {
+                    // If the line is not full, add it to our list of lines to keep
+                    linesToKeep.push(gameState.board[y]);
+                } else {
+                    // If the line is full, it's cleared
+                    linesClearedThisTurn++;
                 }
-                // If we reach here, the line 'y' is full
-                const row = gameState.board.splice(y, 1)[0].fill(0); // Remove the row and get a new empty row
-                gameState.board.unshift(Array(TETRIS_COLS).fill(0)); // Add a truly empty row to the top
-                y++; // Re-check the same new row index (which now contains the row that moved down)
-                linesClearedThisTurn++;
             }
+
+            // `linesToKeep` now contains non-full lines in reverse order (bottom to top).
+            // We need to reverse it to get them in the correct visual order (top to bottom).
+            linesToKeep.reverse();
+
+            // Create a new board by first adding the necessary empty rows at the top
+            const newBoard = [];
+            for (let i = 0; i < linesClearedThisTurn; i++) {
+                newBoard.push(Array(TETRIS_COLS).fill(0)); // Add empty rows
+            }
+
+            // Then, append the lines that were kept (which are now in correct order)
+            linesToKeep.forEach(row => newBoard.push(row));
+
+            // Ensure the new board is exactly TETRIS_ROWS high
+            // This loop should ideally not be needed if calculation is correct, but as a safeguard:
+            while (newBoard.length < TETRIS_ROWS) {
+                newBoard.unshift(Array(TETRIS_COLS).fill(0)); // Add remaining empty rows to the very top if needed
+            }
+            // If newBoard is somehow too long, trim from the top (shouldn't happen with correct logic)
+            if (newBoard.length > TETRIS_ROWS) {
+                newBoard.splice(0, newBoard.length - TETRIS_ROWS);
+            }
+            
+            // Replace the old board with the newly constructed board
+            gameState.board = newBoard;
 
             if (linesClearedThisTurn > 0) {
                 // Basic Tetris scoring (can be made more complex)
@@ -1413,17 +1712,16 @@
                 dropPiece();
             }
 
-            // Input handling for Tetris
+            // Input handling for Tetris - horizontal movement (continuous if key held)
             const currentTime = performance.now();
             const moveDelay = 100; // milliseconds between horizontal moves for held keys
 
             // Soft drop (hold down S or ArrowDown)
-            // This is handled as continuous acceleration of dropCounter
             if (keysPressed.has('arrowdown') || keysPressed.has('s')) {
-                gameState.dropCounter += deltaTime * 5; // Accelerate drop
+                // Accelerate drop speed while held
+                gameState.dropCounter += deltaTime * 5; 
             }
 
-            // Horizontal Movement (Left/Right)
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
                 if (currentTime - gameState.lastMoveTime > moveDelay) {
                     if (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX - 1, gameState.pieceY)) {
@@ -1439,23 +1737,8 @@
                     }
                 }
             } else {
-                gameState.lastMoveTime = 0; // Reset timer if no horizontal key is pressed
-            }
-
-            // Rotate (W or ArrowUp) - triggered on key down, not continuous. Needs to be removed from keysPressed
-            if (keysPressed.has('arrowup') || keysPressed.has('w')) {
-                rotatePiece(gameState.currentPiece, 1); // 1 for clockwise
-                keysPressed.delete('arrowup'); // Consume the key press
-                keysPressed.delete('w');
-            }
-
-            // Hard drop (Spacebar) - triggered on key down, not continuous. Needs to be removed from keysPressed
-            if (keysPressed.has(' ')) {
-                while (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY + 1)) {
-                    gameState.pieceY++;
-                }
-                lockPiece();
-                keysPressed.delete(' '); // Consume the key press
+                // Reset lastMoveTime when no horizontal key is pressed, allows immediate next move
+                gameState.lastMoveTime = 0;
             }
         }
 
@@ -1515,41 +1798,28 @@
                 ctx.stroke();
             }
 
-            // Display level/lines cleared if desired
+            // Display level/lines cleared
             ctx.fillStyle = '#00ff41';
             ctx.font = '16px "Courier New", monospace';
             ctx.textAlign = 'left';
             ctx.fillText(`Level: ${gameState.level}`, 5, 20);
             ctx.fillText(`Lines: ${gameState.linesCleared}`, 5, 40);
 
-            if (gameState.isGameOver) {
-                // Game Over text is handled by the overlay now
-            }
+            // Game Over text is handled by the overlay now
         }
+        // --- End Tetris Game ---
 
-        // --- Game Over Function ---
-        function gameOver() {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
-            }
-            // Removed playSound('game_over');
 
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('finalScoreDisplay').textContent = 'Final Score: ' + score;
-            document.getElementById('gameOverOverlay').classList.add('active');
-            keysPressed.clear();
-        }
-
-        function initApp() {
-            createStars();
+        // Initial setup on window load
+        window.addEventListener('load', () => {
+            createStars(); // Populate stars on load
+            // Ensure initial display state is correct
             document.getElementById('gameSelection').style.display = 'grid';
             document.getElementById('gameArea').style.display = 'none';
             document.getElementById('gameOverOverlay').classList.remove('active');
-            updateScore();
-        }
-
-        document.addEventListener('DOMContentLoaded', initApp);
+            updateScore(); // Initialize score display
+        });
+        window.addEventListener('resize', createStars); // Re-populate stars on resize for responsiveness
     </script>
 </body>
 </html>

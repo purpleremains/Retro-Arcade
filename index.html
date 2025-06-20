@@ -103,19 +103,23 @@
             width: 200%;
             height: 200%;
             background: linear-gradient(45deg, transparent, rgba(0, 255, 65, 0.1), transparent);
-            transform: rotate(45deg);
-            transition: all 0.5s;
+            transform: rotate(45deg) translateX(-100%) translateY(-100%); /* Start off-screen */
             opacity: 0;
+            transition: none; /* Animation will control the visual properties */
         }
         @keyframes shine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+            0% { transform: rotate(45deg) translateX(-100%) translateY(-100%); opacity: 0; }
+            1% { opacity: 1; } /* Make it visible at the start of the sweep */
+            99% { opacity: 1; } /* Keep it visible during the sweep */
+            100% { transform: rotate(45deg) translateX(100%) translateY(100%); opacity: 0; } /* End off-screen and fade out */
         }
         .game-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 10px 30px rgba(0, 255, 65, 0.4);
             border-color: #00ffff;
+        }
+        .game-card:hover::before {
+            animation: shine 1.5s linear infinite; /* Play animation continuously while hovered */
         }
         .game-title {
             font-size: 1.5rem;
@@ -237,6 +241,13 @@
             padding: 40px;
             box-shadow: 0 0 30px rgba(255, 0, 65, 0.6);
             animation: fadeIn 0.5s ease-out;
+        }
+        .game-over-content h2 {
+            font-size: 3rem;
+            color: #ff0041;
+            text-shadow: 0 0 15px #ff0041;
+            margin-bottom: 20px;
+            animation: heartbeat 1.5s infinite;
         }
         @keyframes heartbeat {
             0% { transform: scale(1); }
@@ -1360,7 +1371,7 @@
                 // Removed playSound('bounce');
             } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
                 gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
-                ball.vx = -gameState.ball.vx;
+                gameState.ball.vx = -gameState.ball.vx; // FIX: Changed 'ball.vx' to 'gameState.ball.vx'
                 // Removed playSound('bounce');
             }
         
@@ -1596,7 +1607,7 @@
             const originalPiece = JSON.parse(JSON.stringify(piece)); // Keep original for rollback
             let newPiece = originalPiece.map((row, y) => row.map((val, x) => originalPiece[originalPiece.length - 1 - x][y]));
 
-            // If dir is -1 (counter-clockwise), rotate 3 times clockwise
+            // If dir === -1 (counter-clockwise), rotate 3 times clockwise
             if (dir === -1) {
                 for (let i = 0; i < 3; i++) {
                     newPiece = newPiece.map((row, y) => row.map((val, x) => newPiece[newPiece.length - 1 - x][y]));
@@ -1641,49 +1652,45 @@
             generateNewPiece();
         }
 
-        // --- Tetris Clear Lines (Refactored for robustness) ---
+        // --- Tetris Clear Lines (Robust Refactored Version) ---
         function clearLines() {
             let linesClearedThisTurn = 0;
-            const linesToKeep = []; // Will store only the rows that are NOT full
+            const keptLines = []; // Array to hold lines that are not full
 
-            // Iterate from the bottom of the board upwards
-            for (let y = TETRIS_ROWS - 1; y >= 0; y--) {
-                // Check if the current row 'y' is full (contains no empty blocks)
+            // Iterate through the current board from top to bottom
+            for (let y = 0; y < TETRIS_ROWS; y++) {
                 const isLineFull = gameState.board[y].every(block => block !== 0);
 
                 if (!isLineFull) {
-                    // If the line is not full, add it to our list of lines to keep
-                    linesToKeep.push(gameState.board[y]);
+                    // If the line is NOT full, keep it
+                    keptLines.push(gameState.board[y]);
                 } else {
-                    // If the line is full, it's cleared
+                    // If the line IS full, increment cleared count
                     linesClearedThisTurn++;
                 }
             }
 
-            // `linesToKeep` now contains non-full lines in reverse order (bottom to top).
-            // We need to reverse it to get them in the correct visual order (top to bottom).
-            linesToKeep.reverse();
-
-            // Create a new board by first adding the necessary empty rows at the top
+            // Create a brand new board
             const newBoard = [];
+
+            // First, add new empty rows for each line that was cleared. These will appear at the top.
             for (let i = 0; i < linesClearedThisTurn; i++) {
-                newBoard.push(Array(TETRIS_COLS).fill(0)); // Add empty rows
+                newBoard.push(Array(TETRIS_COLS).fill(0));
             }
 
-            // Then, append the lines that were kept (which are now in correct order)
-            linesToKeep.forEach(row => newBoard.push(row));
+            // Then, append all the lines that were kept (the non-full ones).
+            // This naturally shifts them to the bottom of the board.
+            keptLines.forEach(row => newBoard.push(row));
 
-            // Ensure the new board is exactly TETRIS_ROWS high
-            // This loop should ideally not be needed if calculation is correct, but as a safeguard:
+            // Sanity check: Ensure the new board has the correct number of rows
+            while (newBoard.length > TETRIS_ROWS) {
+                newBoard.shift(); // Remove excess rows from the top if somehow too many were added
+            }
             while (newBoard.length < TETRIS_ROWS) {
-                newBoard.unshift(Array(TETRIS_COLS).fill(0)); // Add remaining empty rows to the very top if needed
-            }
-            // If newBoard is somehow too long, trim from the top (shouldn't happen with correct logic)
-            if (newBoard.length > TETRIS_ROWS) {
-                newBoard.splice(0, newBoard.length - TETRIS_ROWS);
+                newBoard.unshift(Array(TETRIS_COLS).fill(0)); // Add empty rows to top if somehow too few were added
             }
             
-            // Replace the old board with the newly constructed board
+            // Replace the old game board with the newly constructed one
             gameState.board = newBoard;
 
             if (linesClearedThisTurn > 0) {

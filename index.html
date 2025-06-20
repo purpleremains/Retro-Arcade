@@ -8,7 +8,7 @@
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border: border-box;
         }
         body {
             font-family: 'Courier New', monospace;
@@ -702,7 +702,11 @@
             gameState.ball.y += gameState.ball.dy * deltaTime;
 
             // Ball collision with top/bottom walls
-            if (gameState.ball.y - gameState.ball.radius <= 0 || gameState.ball.y + gameState.ball.radius >= canvas.height) {
+            if (gameState.ball.y - gameState.ball.radius <= 0) {
+                gameState.ball.y = gameState.ball.radius; // Reposition to avoid sticking
+                gameState.ball.dy = -gameState.ball.dy;
+            } else if (gameState.ball.y + gameState.ball.radius >= canvas.height) {
+                gameState.ball.y = canvas.height - gameState.ball.radius; // Reposition to avoid sticking
                 gameState.ball.dy = -gameState.ball.dy;
             }
 
@@ -712,6 +716,10 @@
                 gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width &&
                 gameState.ball.y >= gameState.paddle1.y &&
                 gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height) {
+                
+                // Reposition the ball to prevent sticking
+                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius;
+                
                 gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25); // Slight random vertical deflection
                 score += 1;
@@ -722,6 +730,10 @@
                 gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x &&
                 gameState.ball.y >= gameState.paddle2.y &&
                 gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height) {
+                
+                // Reposition the ball to prevent sticking
+                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius;
+
                 gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25);
             }
@@ -992,6 +1004,51 @@
             }
         }
 
+        // Helper function to check AABB collision
+        function checkCollision(ball, rect) {
+            // Check if ball is touching or overlapping rect
+            return ball.x + ball.radius > rect.x &&
+                   ball.x - ball.radius < rect.x + rect.width &&
+                   ball.y + ball.radius > rect.y &&
+                   ball.y - ball.radius < rect.y + rect.height;
+        }
+
+        // Helper function to get point of impact and normal
+        function getCollisionResponse(ball, block) {
+            let hitX = false; // Did it hit horizontally?
+            let hitY = false; // Did it hit vertically?
+
+            // Determine if horizontal or vertical collision occurred
+            // Check if ball was outside horizontally and moved inside
+            if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
+                ball.x = block.x - ball.radius; // Reposition
+                ball.vx *= -1;
+                hitX = true;
+            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
+                ball.x = block.x + block.width + ball.radius; // Reposition
+                ball.vx *= -1;
+                hitX = true;
+            }
+
+            // Check if ball was outside vertically and moved inside
+            if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
+                ball.y = block.y - ball.radius; // Reposition
+                ball.vy *= -1;
+                hitY = true;
+            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
+                ball.y = block.y + block.height + ball.radius; // Reposition
+                ball.vy *= -1;
+                hitY = true;
+            }
+
+            // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
+            // For simplicity in Breakout, usually one axis dominates.
+            // This basic logic handles the most common cases correctly.
+            
+            return hitX || hitY; // Return true if any collision occurred
+        }
+
+
         function updateBreakout(deltaTime) {
             // Paddle movement
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
@@ -1001,43 +1058,60 @@
                 gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
             }
 
+            // Store previous ball position for more accurate collision detection
+            gameState.ball.prevX = gameState.ball.x;
+            gameState.ball.prevY = gameState.ball.y;
+
             // Ball movement
             gameState.ball.x += gameState.ball.vx * deltaTime;
             gameState.ball.y += gameState.ball.vy * deltaTime;
 
             // Ball collision with walls
-            if (gameState.ball.x - gameState.ball.radius <= 0 || gameState.ball.x + gameState.ball.radius >= canvas.width) {
-                gameState.ball.vx = -gameState.ball.vx;
+            if (gameState.ball.x - gameState.ball.radius <= 0) {
+                 gameState.ball.x = gameState.ball.radius; // Reposition
+                 gameState.ball.vx = -gameState.ball.vx;
+            } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
+                 gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
+                 gameState.ball.vx = -gameState.ball.vx;
             }
+
             if (gameState.ball.y - gameState.ball.radius <= 0) {
-                gameState.ball.vy = -gameState.ball.vy;
+                 gameState.ball.y = gameState.ball.radius; // Reposition
+                 gameState.ball.vy = -gameState.ball.vy;
             }
 
             // Ball collision with paddle
+            // Check if ball hit the paddle from above (moving downwards)
             if (gameState.ball.vy > 0 &&
+                gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
+                gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
                 gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
-                gameState.ball.y + gameState.ball.radius <= gameState.paddle.y + gameState.paddle.height &&
-                gameState.ball.x >= gameState.paddle.x &&
-                gameState.ball.x <= gameState.paddle.x + gameState.paddle.width) {
+                gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
+            {
+                // Reposition the ball on top of the paddle to prevent sticking
+                gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
+
                 gameState.ball.vy = -gameState.ball.vy;
                 const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
                 gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
             }
 
             // Ball collision with blocks
+            let hitBlockThisFrame = false;
+            // Iterate backwards to safely remove elements during iteration
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
                 const block = gameState.blocks[i];
-                if (block && gameState.ball.x + gameState.ball.radius > block.x &&
-                    gameState.ball.x - gameState.ball.radius < block.x + block.width &&
-                    gameState.ball.y + gameState.ball.radius > block.y &&
-                    gameState.ball.y - gameState.ball.radius < block.y + block.height) {
 
-                    gameState.ball.vy = -gameState.ball.vy;
-                    score += 10;
-                    updateScore();
-                    gameState.blocks.splice(i, 1);
-                    gameState.blocksRemaining--;
-                    break;
+                if (checkCollision(gameState.ball, block)) {
+                    // This is a collision! Now handle the bounce and remove the block.
+                    // Call the new helper function to handle reflection and repositioning
+                    if (getCollisionResponse(gameState.ball, block)) {
+                        score += 10;
+                        updateScore();
+                        gameState.blocks.splice(i, 1);
+                        gameState.blocksRemaining--;
+                        hitBlockThisFrame = true; // Mark that a block was hit
+                    }
                 }
             }
 

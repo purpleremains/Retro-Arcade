@@ -8,7 +8,7 @@
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border: border-box;
+            box-sizing: border-box;
         }
         body {
             font-family: 'Courier New', monospace;
@@ -332,6 +332,11 @@
                 <p class="game-description">Break through the neon barrier with your energy ball. Clear all blocks to advance to the next level! Use A/D or ←/→ arrows.</p>
                 <button class="play-btn">Play Now</button>
             </div>
+            <div class="game-card" onclick="startGame('tetris')">
+                <h3 class="game-title">🟦 Pixel Tetris</h3>
+                <p class="game-description">Arrange falling blocks to form complete lines and clear them. Don't let the stack reach the top! Use Arrow Keys or WASD to move and rotate.</p>
+                <button class="play-btn">Play Now</button>
+            </div>
         </div>
 
         <div id="gameArea" class="game-area">
@@ -433,6 +438,7 @@
                 case 'pong': updatePong(deltaTime); drawPong(); break;
                 case 'asteroids': updateAsteroids(deltaTime); drawAsteroids(); break;
                 case 'breakout': updateBreakout(deltaTime); drawBreakout(); break;
+                case 'tetris': updateTetris(deltaTime); drawTetris(); break; // ADDED TETRIS
             }
 
             // Continue the loop
@@ -455,8 +461,11 @@
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
 
+            // Reset canvas width/height to original for games that don't need specific sizes
             canvas.width = originalCanvasWidth;
             canvas.height = originalCanvasHeight;
+            canvas.style.marginLeft = ''; // Clear Tetris specific centering
+            canvas.style.marginRight = '';
 
             currentGame = gameType;
             score = 0;
@@ -523,8 +532,12 @@
         function initializeGame(gameType) {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
+            // Canvas width/height might be overridden by game's init function
             canvas.width = originalCanvasWidth;
             canvas.height = originalCanvasHeight;
+            canvas.style.marginLeft = 'auto'; // Default to center
+            canvas.style.marginRight = 'auto'; // Default to center
+
 
             document.getElementById('gameTitle').textContent = getGameTitle(gameType);
             setupControls(gameType); // Call setupControls to set specific instructions
@@ -535,6 +548,7 @@
                 case 'pong': initPong(); break;
                 case 'asteroids': initAsteroids(); break;
                 case 'breakout': initBreakout(); break;
+                case 'tetris': initTetris(); break; // ADDED TETRIS
             }
         }
 
@@ -543,7 +557,8 @@
                 snake: '🐍 Neon Snake',
                 pong: '⚡ Cyber Pong',
                 asteroids: '💫 Space Rocks',
-                breakout: '🧱 Block Destroyer'
+                breakout: '🧱 Block Destroyer',
+                tetris: '🟦 Pixel Tetris' // ADDED TETRIS
             };
             return titles[gameType];
         }
@@ -566,6 +581,9 @@
                     break;
                 case 'breakout':
                     instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your paddle.';
+                    break;
+                case 'tetris': // ADDED TETRIS
+                    instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.';
                     break;
                 default:
                     instructions = 'Keyboard controls.';
@@ -628,9 +646,9 @@
                 if (head.x === gameState.food.x && head.y === gameState.food.y) {
                     score += 10;
                     updateScore();
-                    spawnFood();
                     // Increase speed slightly with score
                     if (gameState.speed < 20) gameState.speed += 0.5;
+                    spawnFood(); // Spawn after speed increase, so food doesn't disappear if snake gets too fast
                 } else {
                     gameState.snake.pop();
                 }
@@ -679,6 +697,7 @@
             }
         }
 
+
         // --- Pong Game ---
         function initPong() {
             gameState = {
@@ -705,9 +724,11 @@
             if (gameState.ball.y - gameState.ball.radius <= 0) {
                 gameState.ball.y = gameState.ball.radius; // Reposition to avoid sticking
                 gameState.ball.dy = -gameState.ball.dy;
+                // Removed playSound('bounce');
             } else if (gameState.ball.y + gameState.ball.radius >= canvas.height) {
                 gameState.ball.y = canvas.height - gameState.ball.radius; // Reposition to avoid sticking
                 gameState.ball.dy = -gameState.ball.dy;
+                // Removed playSound('bounce');
             }
 
             // Ball collision with paddles
@@ -724,6 +745,7 @@
                 gameState.ball.dy += (Math.random() * 50 - 25); // Slight random vertical deflection
                 score += 1;
                 updateScore();
+                // Removed playSound('bounce');
             }
             // Paddle 2 (AI)
             else if (gameState.ball.dx > 0 && // Moving right
@@ -736,6 +758,7 @@
 
                 gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25);
+                // Removed playSound('bounce');
             }
 
             // Ball out of bounds (score for AI or game over for player)
@@ -749,6 +772,7 @@
                  gameState.ball.dy = (Math.random() > 0.5 ? 1 : -1) * 180;
                  score += 5;
                  updateScore();
+                 // Removed playSound('score');
             }
 
             // Simple AI for Paddle 2 (more responsive with deltaTime)
@@ -1070,14 +1094,17 @@
             if (gameState.ball.x - gameState.ball.radius <= 0) {
                  gameState.ball.x = gameState.ball.radius; // Reposition
                  gameState.ball.vx = -gameState.ball.vx;
+                 // Removed playSound('bounce');
             } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
                  gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
                  gameState.ball.vx = -gameState.ball.vx;
+                 // Removed playSound('bounce');
             }
 
             if (gameState.ball.y - gameState.ball.radius <= 0) {
                  gameState.ball.y = gameState.ball.radius; // Reposition
                  gameState.ball.vy = -gameState.ball.vy;
+                 // Removed playSound('bounce');
             }
 
             // Ball collision with paddle
@@ -1094,10 +1121,10 @@
                 gameState.ball.vy = -gameState.ball.vy;
                 const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
                 gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
+                // Removed playSound('bounce');
             }
 
             // Ball collision with blocks
-            let hitBlockThisFrame = false;
             // Iterate backwards to safely remove elements during iteration
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
                 const block = gameState.blocks[i];
@@ -1110,7 +1137,8 @@
                         updateScore();
                         gameState.blocks.splice(i, 1);
                         gameState.blocksRemaining--;
-                        hitBlockThisFrame = true; // Mark that a block was hit
+                        // Removed playSound('block_break');
+                        break; // Stop after hitting one block to prevent multiple deletions
                     }
                 }
             }
@@ -1123,8 +1151,8 @@
 
             // Win condition
             if (gameState.blocksRemaining === 0) {
-                alert('Level Cleared! You win!');
-                gameOver();
+                alert('Level Cleared! You win!'); // Consider a custom win screen later
+                gameOver(); // Call game over to stop loop and show overlay
                 return;
             }
         }
@@ -1147,12 +1175,355 @@
             });
         }
 
+        // --- Tetris Game ---
+        const TETRIS_COLS = 10;
+        const TETRIS_ROWS = 20;
+        const TETRIS_BLOCK_SIZE = 20; // Size of each square block in pixels
+
+        // Tetromino shapes and their colors (relative coordinates)
+        const TETROMINOS = {
+            'I': {
+                shape: [
+                    [0, 0, 0, 0],
+                    [1, 1, 1, 1],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ],
+                color: '#00ffff' // Cyan
+            },
+            'J': {
+                shape: [
+                    [1, 0, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#0000ff' // Blue
+            },
+            'L': {
+                shape: [
+                    [0, 0, 1],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#ffa500' // Orange
+            },
+            'O': {
+                shape: [
+                    [1, 1],
+                    [1, 1]
+                ],
+                color: '#ffff00' // Yellow
+            },
+            'S': {
+                shape: [
+                    [0, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0]
+                ],
+                color: '#00ff00' // Green
+            },
+            'T': {
+                shape: [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#800080' // Purple
+            },
+            'Z': {
+                shape: [
+                    [1, 1, 0],
+                    [0, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#ff0000' // Red
+            }
+        };
+
+        function initTetris() {
+            // Adjust canvas size for Tetris
+            canvas.width = TETRIS_COLS * TETRIS_BLOCK_SIZE; // 10 * 20 = 200
+            canvas.height = TETRIS_ROWS * TETRIS_BLOCK_SIZE; // 20 * 20 = 400
+
+            // Center the canvas in the game area
+            canvas.style.marginLeft = 'auto';
+            canvas.style.marginRight = 'auto';
+
+            gameState = {
+                board: Array(TETRIS_ROWS).fill(0).map(() => Array(TETRIS_COLS).fill(0)), // 0 for empty, values for colors
+                currentPiece: null,
+                nextPiece: null, // Future feature: next piece display
+                pieceX: 0,
+                pieceY: 0,
+                dropCounter: 0,
+                dropInterval: 1, // seconds
+                level: 1,
+                linesCleared: 0,
+                score: 0,
+                isGameOver: false,
+                lastMoveTime: 0 // To prevent rapid horizontal movement
+            };
+
+            generateNewPiece();
+            // Start the drop process
+            gameState.dropCounter = 0;
+            gameState.lastMoveTime = performance.now(); // Initialize for input handling
+        }
+
+        function generateNewPiece() {
+            const pieceKeys = Object.keys(TETROMINOS);
+            const randomKey = pieceKeys[Math.floor(Math.random() * pieceKeys.length)];
+            const pieceData = TETROMINOS[randomKey];
+
+            gameState.currentPiece = JSON.parse(JSON.stringify(pieceData.shape)); // Deep copy the shape
+            gameState.currentPieceColor = pieceData.color;
+            gameState.pieceX = Math.floor(TETRIS_COLS / 2) - Math.floor(gameState.currentPiece[0].length / 2);
+            gameState.pieceY = 0; // Start at the very top
+
+            if (checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY)) {
+                // Game Over if new piece can't be placed
+                gameState.isGameOver = true;
+                gameOver(); // Trigger the global game over
+            }
+        }
+
+        // --- Tetris Collision Detection ---
+        function checkTetrisCollision(board, piece, offsetX, offsetY) {
+            for (let y = 0; y < piece.length; y++) {
+                for (let x = 0; x < piece[y].length; x++) {
+                    if (piece[y][x] !== 0) { // If it's a solid block of the piece
+                        const boardX = x + offsetX;
+                        const boardY = y + offsetY;
+
+                        if (boardY >= TETRIS_ROWS || boardX < 0 || boardX >= TETRIS_COLS) {
+                            return true; // Collision with walls or floor
+                        }
+                        if (boardY < 0) { // Above board (starting position)
+                            continue; // No collision check needed if still in negative Y
+                        }
+                        if (board[boardY] && board[boardY][boardX] !== 0) {
+                            return true; // Collision with another placed block
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // --- Tetris Piece Rotation ---
+        function rotatePiece(piece, dir) {
+            // dir = 1 for clockwise, -1 for counter-clockwise (not fully implemented for -1)
+            // Clockwise rotation by transposing and reversing rows
+            const newPiece = piece.map((row, y) => row.map((val, x) => piece[piece.length - 1 - x][y]));
+
+            // If dir is -1 (counter-clockwise), rotate 3 times clockwise
+            if (dir === -1) {
+                for (let i = 0; i < 3; i++) {
+                    newPiece = newPiece.map((row, y) => row.map((val, x) => newPiece[newPiece.length - 1 - x][y]));
+                }
+            }
+
+            // Basic Wall Kick / Collision Avoidance
+            const offsets = [
+                [0, 0],   // Try no offset
+                [-1, 0],  // Try moving left
+                [1, 0],   // Try moving right
+                [0, -1],  // Try moving down (for T, J, L, S, Z where vertical space is needed)
+                [-2, 0],  // For I-piece edge cases
+                [2, 0]    // For I-piece edge cases
+            ];
+
+            for (const [ox, oy] of offsets) {
+                if (!checkTetrisCollision(gameState.board, newPiece, gameState.pieceX + ox, gameState.pieceY + oy)) {
+                    gameState.currentPiece = newPiece;
+                    gameState.pieceX += ox;
+                    gameState.pieceY += oy;
+                    return true;
+                }
+            }
+            return false; // Could not rotate
+        }
+
+        // --- Tetris Lock Piece ---
+        function lockPiece() {
+            for (let y = 0; y < gameState.currentPiece.length; y++) {
+                for (let x = 0; x < gameState.currentPiece[y].length; x++) {
+                    if (gameState.currentPiece[y][x] !== 0) {
+                        // Check if it's within bounds before assigning
+                        if (gameState.pieceY + y >= 0 && gameState.pieceY + y < TETRIS_ROWS &&
+                            gameState.pieceX + x >= 0 && gameState.pieceX + x < TETRIS_COLS) {
+                            gameState.board[gameState.pieceY + y][gameState.pieceX + x] = gameState.currentPieceColor; // Store the color with the block
+                        }
+                    }
+                }
+            }
+            clearLines();
+            generateNewPiece();
+        }
+
+        // --- Tetris Clear Lines ---
+        function clearLines() {
+            let linesClearedThisTurn = 0;
+            outer: for (let y = TETRIS_ROWS - 1; y >= 0; y--) {
+                for (let x = 0; x < TETRIS_COLS; x++) {
+                    if (gameState.board[y][x] === 0) {
+                        continue outer; // Not a full line, move to next row
+                    }
+                }
+                // If we reach here, the line 'y' is full
+                const row = gameState.board.splice(y, 1)[0].fill(0); // Remove the row and get a new empty row
+                gameState.board.unshift(Array(TETRIS_COLS).fill(0)); // Add a truly empty row to the top
+                y++; // Re-check the same new row index (which now contains the row that moved down)
+                linesClearedThisTurn++;
+            }
+
+            if (linesClearedThisTurn > 0) {
+                // Basic Tetris scoring (can be made more complex)
+                const scorePerLine = [0, 100, 300, 500, 800]; // 0, single, double, triple, tetris
+                score += scorePerLine[linesClearedThisTurn] * gameState.level;
+                gameState.linesCleared += linesClearedThisTurn;
+                updateScore();
+                // No sounds
+            }
+            // Increase level after a certain number of lines cleared
+            if (gameState.linesCleared >= gameState.level * 10) { // Clear 10 lines per level increase
+                gameState.level++;
+                gameState.dropInterval = Math.max(0.1, gameState.dropInterval * 0.85); // Make it drop faster
+                // console.log(`Level Up! New level: ${gameState.level}, Drop Interval: ${gameState.dropInterval.toFixed(2)}s`);
+            }
+        }
+
+        // --- Tetris Update Logic ---
+        function updateTetris(deltaTime) {
+            if (gameState.isGameOver) return;
+
+            gameState.dropCounter += deltaTime;
+            if (gameState.dropCounter >= gameState.dropInterval) {
+                gameState.dropCounter = 0;
+                dropPiece();
+            }
+
+            // Input handling for Tetris
+            const currentTime = performance.now();
+            const moveDelay = 100; // milliseconds between horizontal moves for held keys
+
+            // Soft drop (hold down S or ArrowDown)
+            // This is handled as continuous acceleration of dropCounter
+            if (keysPressed.has('arrowdown') || keysPressed.has('s')) {
+                gameState.dropCounter += deltaTime * 5; // Accelerate drop
+            }
+
+            // Horizontal Movement (Left/Right)
+            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
+                if (currentTime - gameState.lastMoveTime > moveDelay) {
+                    if (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX - 1, gameState.pieceY)) {
+                        gameState.pieceX--;
+                        gameState.lastMoveTime = currentTime;
+                    }
+                }
+            } else if (keysPressed.has('arrowright') || keysPressed.has('d')) {
+                if (currentTime - gameState.lastMoveTime > moveDelay) {
+                    if (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX + 1, gameState.pieceY)) {
+                        gameState.pieceX++;
+                        gameState.lastMoveTime = currentTime;
+                    }
+                }
+            } else {
+                gameState.lastMoveTime = 0; // Reset timer if no horizontal key is pressed
+            }
+
+            // Rotate (W or ArrowUp) - triggered on key down, not continuous. Needs to be removed from keysPressed
+            if (keysPressed.has('arrowup') || keysPressed.has('w')) {
+                rotatePiece(gameState.currentPiece, 1); // 1 for clockwise
+                keysPressed.delete('arrowup'); // Consume the key press
+                keysPressed.delete('w');
+            }
+
+            // Hard drop (Spacebar) - triggered on key down, not continuous. Needs to be removed from keysPressed
+            if (keysPressed.has(' ')) {
+                while (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY + 1)) {
+                    gameState.pieceY++;
+                }
+                lockPiece();
+                keysPressed.delete(' '); // Consume the key press
+            }
+        }
+
+        function dropPiece() {
+            if (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY + 1)) {
+                gameState.pieceY++;
+            } else {
+                lockPiece();
+            }
+        }
+
+        // --- Tetris Drawing Logic ---
+        function drawTetris() {
+            // Draw the fixed blocks on the board
+            for (let y = 0; y < TETRIS_ROWS; y++) {
+                for (let x = 0; x < TETRIS_COLS; x++) {
+                    if (gameState.board[y][x] !== 0) {
+                        ctx.fillStyle = gameState.board[y][x]; // Use the stored color
+                        ctx.fillRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                        ctx.strokeStyle = '#000'; // Block borders
+                        ctx.strokeRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                    }
+                }
+            }
+
+            // Draw the current falling piece
+            if (gameState.currentPiece) {
+                ctx.fillStyle = gameState.currentPieceColor;
+                for (let y = 0; y < gameState.currentPiece.length; y++) {
+                    for (let x = 0; x < gameState.currentPiece[y].length; x++) {
+                        if (gameState.currentPiece[y][x] !== 0) {
+                            ctx.fillRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE,
+                                         (gameState.pieceY + y) * TETRIS_BLOCK_SIZE,
+                                         TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                            ctx.strokeStyle = '#000'; // Block borders
+                            ctx.strokeRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE,
+                                           (gameState.pieceY + y) * TETRIS_BLOCK_SIZE,
+                                           TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                        }
+                    }
+                }
+            }
+
+            // Draw grid lines (optional, can be done with fillRect above for outlines too)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= TETRIS_COLS; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * TETRIS_BLOCK_SIZE, 0);
+                ctx.lineTo(i * TETRIS_BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= TETRIS_ROWS; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * TETRIS_BLOCK_SIZE);
+                ctx.lineTo(canvas.width, i * TETRIS_BLOCK_SIZE);
+                ctx.stroke();
+            }
+
+            // Display level/lines cleared if desired
+            ctx.fillStyle = '#00ff41';
+            ctx.font = '16px "Courier New", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Level: ${gameState.level}`, 5, 20);
+            ctx.fillText(`Lines: ${gameState.linesCleared}`, 5, 40);
+
+            if (gameState.isGameOver) {
+                // Game Over text is handled by the overlay now
+            }
+        }
+
         // --- Game Over Function ---
         function gameOver() {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
+            // Removed playSound('game_over');
 
             document.getElementById('gameArea').style.display = 'none';
             document.getElementById('finalScoreDisplay').textContent = 'Final Score: ' + score;

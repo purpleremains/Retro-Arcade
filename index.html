@@ -1022,7 +1022,7 @@
         function initDino() {
             gameState.dino = {
                 x: 50, y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT, width: DINO_WIDTH_DEFAULT, height: DINO_HEIGHT_DEFAULT,
-                dy: 0, gravity: 0.5, jumpStrength: -10, isJumping: false,
+                dy: 0, gravity: 0.35, jumpStrength: -10, isJumping: false, // Adjusted jumpStrength to -10
                 draw() {
                     if (!ctx) return;
                     ctx.fillStyle = '#00ff41'; ctx.fillRect(this.x, this.y, this.width, this.height);

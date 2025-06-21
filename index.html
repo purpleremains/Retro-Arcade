@@ -1023,8 +1023,8 @@
             gameState.dino = {
                 x: 50, y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT, width: DINO_WIDTH_DEFAULT, height: DINO_HEIGHT_DEFAULT,
                 dy: 0, 
-                gravity: 800, // Pixels per second squared
-                jumpStrength: -250, // Initial upward velocity in pixels per second
+                gravity: 2400, // Slightly increased gravity for quicker descent
+                jumpStrength: -600, // Increased jump strength for higher jump
                 isJumping: false,
                 draw() {
                     if (!ctx) return;
@@ -1041,9 +1041,9 @@
                 }
             };
             gameState.obstacles = [];
-            gameState.gameSpeed = 180; // Pixels per second
+            gameState.gameSpeed = 500; // Initial speed
             gameState.obstacleSpawnTimer = 0; // In seconds
-            gameState.obstacleSpawnInterval = 2; // In seconds
+            gameState.obstacleSpawnInterval = 0.7; // Initial interval
         }
 
         function createDinoObstacle() {
@@ -1074,9 +1074,9 @@
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
                 createDinoObstacle();
                 gameState.obstacleSpawnTimer = 0;
-                gameState.gameSpeed += 2 * deltaTime; // Increase speed over time (2 pixels/second per second)
-                // Decrease interval over time, clamp at 0.5 seconds
-                gameState.obstacleSpawnInterval = Math.max(0.5, gameState.obstacleSpawnInterval - (0.01 * deltaTime)); 
+                gameState.gameSpeed += 5 * deltaTime; // Increase speed over time (now 5 pixels/second per second)
+                // Decrease interval over time, clamp at 0.3 seconds
+                gameState.obstacleSpawnInterval = Math.max(0.3, gameState.obstacleSpawnInterval - (0.02 * deltaTime)); 
             }
             gameState.dino.update(deltaTime); // Pass deltaTime to dino's update
             score++; updateScore();

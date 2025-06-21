@@ -149,14 +149,17 @@
         }
         .game-area {
             display: none;
+            /* RE-ADDED: */
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #00ff41;
             border-radius: 15px;
             padding: 20px;
+            /* END RE-ADDED */
             margin-bottom: 20px;
             text-align: center;
             width: 100%;
             max-width: 650px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); 
         }
         .game-canvas {
             border: 2px solid #00ffff;
@@ -169,14 +172,13 @@
         .game-controls {
             margin: 20px 0;
             text-align: center;
-            /* Added style to make the controls text green as per user's previous implicit preference */
             color: #00ff41;
         }
         .control-btn {
             background: #00ff41;
             border: none;
             padding: 10px 20px;
-            margin: 5px; /* Adjust margin for spacing between buttons */
+            margin: 5px;
             border-radius: 5px;
             color: #000;
             font-weight: bold;
@@ -203,8 +205,8 @@
             margin-top: 10px;
             color: #00ffff;
             font-size: 1.1rem;
-            margin-left: auto; /* Center horizontally */
-            margin-right: auto; /* Center horizontally */
+            margin-left: auto;
+            margin-right: auto;
         }
         /* Pong Difficulty Selection */
         #pongDifficultySelection {
@@ -212,11 +214,11 @@
             border: 2px solid #00ffff;
             border-radius: 15px;
             padding: 30px;
-            margin: 20px auto; /* Added margin: auto for horizontal centering */
+            margin: 20px auto;
             text-align: center;
             max-width: 400px;
             width: 100%;
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -237,8 +239,8 @@
         }
         #pongDifficultySelection input[type="radio"] {
             margin-right: 10px;
-            transform: scale(1.5); /* Make radio buttons larger */
-            accent-color: #00ff41; /* Green accent color */
+            transform: scale(1.5);
+            accent-color: #00ff41;
             cursor: pointer;
         }
         #pongDifficultySelection button {
@@ -251,10 +253,10 @@
 
         .action-buttons {
             margin-top: 15px;
-            display: flex; /* Use flexbox for centering */
-            justify-content: center; /* Center horizontally */
-            align-items: center; /* Center vertically if needed */
-            gap: 10px; /* Space between buttons */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
         .back-btn {
             background: #ff4444;
@@ -264,7 +266,6 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            /* margin-top: 20px; - Removed to align with gap and flex */
         }
         .back-btn:hover {
             background: #ff6666;
@@ -278,7 +279,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.98); /* Increased opacity */
             z-index: 100;
             justify-content: center;
             align-items: center;
@@ -340,7 +341,7 @@
 
         /* Message Box Style */
         .message-box {
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 1); /* Increased opacity to full */
             border: 2px solid #ffeb3b;
             border-radius: 10px;
             padding: 20px;
@@ -349,8 +350,8 @@
             font-size: 1.1rem;
             color: #ffeb3b;
             box-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
-            display: none; /* Hidden by default */
-            position: absolute; /* Added for overlay behavior */
+            display: none;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -590,6 +591,11 @@
             // Initialize canvas and context
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
+            // Clear the canvas explicitly to remove any lingering drawings
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000'; // Fill with black for a clean background
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             canvas.width = originalCanvasWidth;
             canvas.height = originalCanvasHeight;
             // Center the canvas by making it block and auto margin
@@ -604,6 +610,9 @@
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
             canvas.style.display = 'none'; 
+            // Always hide game title until the game is actually started (not just showing instructions)
+            document.getElementById('gameTitle').style.display = 'none'; 
+
 
             currentGame = gameType; // Set current game
 
@@ -622,12 +631,12 @@
                 // For Pong, show difficulty selection first, and the gameArea frame
                 document.getElementById('gameArea').style.display = 'block'; // Show game area for Pong difficulty
                 document.getElementById('pongDifficultySelection').style.display = 'flex';
-                document.getElementById('gameTitle').textContent = '⚡ Cyber Pong - Select Difficulty';
+                // gameTitle remains hidden here as per user's request. It will be shown in startSelectedPongDifficulty.
                 // No need to initialize Pong game state yet, it will be done after difficulty selection
             } else {
-                // For other games, only show the general start overlay, keep gameArea hidden for now
-                document.getElementById('gameArea').style.display = 'none'; // Keep game area hidden
-                document.getElementById('gameTitle').textContent = getGameTitle(gameType); // Update title even if hidden
+                // For other games, show the gameArea as container for messageBox
+                document.getElementById('gameArea').style.display = 'block'; 
+                // gameTitle is explicitly hidden above. It will be shown when startGameFromOverlay is called.
                 const controlsText = getControlsText(gameType);
                 // Pass true for isStartOverlay to show 'Start Game' button
                 showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true);
@@ -682,6 +691,8 @@
                 document.getElementById('scoreDisplay').style.display = 'block';
             }
             
+            document.getElementById('gameTitle').style.display = 'block'; // Show game title now
+            document.getElementById('gameArea').style.display = 'block'; // Game Area is already active and its children will be shown
             canvas.style.display = 'block'; // Show canvas now that instructions are hidden
             document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
             document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
@@ -696,7 +707,9 @@
             gameActive = true; // Set unified game active flag
             
             // Now, show the actual game elements within the gameArea
-            document.getElementById('gameArea').style.display = 'block'; // Show game area container
+            document.getElementById('gameArea').style.display = 'block'; // Game area container should already be visible
+            document.getElementById('gameTitle').style.display = 'block'; // Show game title now
+            document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
             canvas.style.display = 'block'; // Show canvas
             document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
             document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
@@ -722,6 +735,7 @@
             // Directly initialize and start Pong without the extra message box step
             initializeGame('pong', selectedDifficulty); 
             document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide difficulty selection
+            document.getElementById('gameTitle').style.display = 'block'; // Show game title for Pong
             document.getElementById('gameTitle').textContent = getGameTitle('pong'); // Update title
             // GameArea is already 'block' from startGame for Pong. Now show its contents.
             document.getElementById('scoreDisplay').style.display = 'block'; // Show score display
@@ -802,22 +816,30 @@
             gameState = {}; // Clear previous game state
             keysPressed.clear(); // Clear any pressed keys
 
-            // Clear canvas display
+            // Clear canvas display explicitly before re-initializing
             if (ctx) {
-                ctx.fillStyle = '#000';
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000'; // Fill with black
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Hide everything except the message box/difficulty selection
+            // Hide game-specific UI elements
             canvas.style.display = 'none';
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
             document.getElementById('scoreDisplay').style.display = 'none'; 
-            document.getElementById('minesweeperInfo').style.display = 'none'; // Ensure Minesweeper info is hidden
+            document.getElementById('minesweeperInfo').style.display = 'none'; 
+            document.getElementById('gameTitle').style.display = 'none'; // Explicitly hide game title on restart
+            
+            // Ensure gameArea is visible as container for the message/difficulty
+            document.getElementById('gameArea').style.display = 'block'; 
+
 
             if (currentGame === 'pong') {
-                startGame('pong', null); // Go back to difficulty selection
+                // For Pong, go back to difficulty selection, which correctly uses gameArea styling
+                startGame('pong', null); 
             } else {
+                // For other games, re-initialize and show the start message again (which uses gameArea styling)
                 initializeGame(currentGame); 
                 const controlsText = getControlsText(currentGame);
                 showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true); 
@@ -827,12 +849,21 @@
         function restartGameFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
             
+            // Clear canvas explicitly before restarting from game over
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000'; // Fill with black
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
             if (currentGame === 'pong') {
                 startGame('pong', null); 
             } else {
                 initializeGame(currentGame); 
                 gameActive = true; 
                 document.getElementById('gameArea').style.display = 'block';
+                document.getElementById('gameTitle').style.display = 'block'; // Show game title on immediate restart
+                document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
                 canvas.style.display = 'block'; 
                 document.getElementById('scoreDisplay').style.display = 'block';
                 document.getElementById('restartGameButton').style.display = 'block'; 
@@ -862,8 +893,15 @@
             }
             gameActive = false; // Reset gameActive when returning to menu
 
+            // Clear canvas explicitly when going back to menu
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000'; // Fill with black
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
             // Hide all game displays and overlays
-            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'none'; // Ensure gameArea is hidden
             document.getElementById('pongDifficultySelection').style.display = 'none';
             document.getElementById('messageBox').style.display = 'none';
             document.getElementById('gameOverOverlay').classList.remove('active');
@@ -881,6 +919,8 @@
             document.getElementById('scoreDisplay').style.display = 'block'; // Ensure general score display is visible
             document.getElementById('restartGameButton').style.display = 'none'; // Hide restart button when back to menu
             document.querySelector('.action-buttons').style.display = 'none'; // Hide action buttons when back to menu
+            document.getElementById('gameTitle').style.display = 'none'; // Ensure it's hidden when returning to menu
+
 
             // Ensure canvas is hidden when going back to menu
             if (canvas) {
@@ -905,10 +945,12 @@
             // Canvas/context is already set up by startGame for the correct game type.
 
             if (ctx) { // Only clear if it's a traditional game canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-            document.getElementById('gameTitle').textContent = getGameTitle(gameType);
+            // Title is now controlled by display property, not textContent here
+            // document.getElementById('gameTitle').textContent = getGameTitle(gameType);
             
             switch(gameType) {
                 case 'dino': initDino(); break;
@@ -1822,6 +1864,8 @@
             document.getElementById('gameOverOverlay').classList.remove('active'); // Hide game over overlay
             document.getElementById('messageBox').style.display = 'none'; // Hide message box
             document.getElementById('mainHeader').style.display = 'block'; // Ensure header is shown on initial load
+            // Explicitly hide game title on initial load until a game starts
+            document.getElementById('gameTitle').style.display = 'none'; 
             updateScore(); // Initial update for score display (will show Score: 0)
         });
 

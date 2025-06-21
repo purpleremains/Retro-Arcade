@@ -157,10 +157,6 @@
             text-align: center;
             width: 100%;
             max-width: 650px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
         .game-canvas {
             border: 2px solid #00ffff;
@@ -173,12 +169,14 @@
         .game-controls {
             margin: 20px 0;
             text-align: center;
+            /* Added style to make the controls text green as per user's previous implicit preference */
+            color: #00ff41;
         }
         .control-btn {
             background: #00ff41;
             border: none;
             padding: 10px 20px;
-            margin: 5px;
+            margin: 5px; /* Adjust margin for spacing between buttons */
             border-radius: 5px;
             color: #000;
             font-weight: bold;
@@ -196,8 +194,67 @@
             margin: 10px 0;
             color: #00ffff;
         }
+        /* Minesweeper specific controls for flags/timer */
+        #minesweeperInfo {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 10px;
+            color: #00ffff;
+            font-size: 1.1rem;
+            margin-left: auto; /* Center horizontally */
+            margin-right: auto; /* Center horizontally */
+        }
+        /* Pong Difficulty Selection */
+        #pongDifficultySelection {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px auto; /* Added margin: auto for horizontal centering */
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #pongDifficultySelection h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #00ff41;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+        #pongDifficultySelection label {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: #00ffff;
+        }
+        #pongDifficultySelection input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.5); /* Make radio buttons larger */
+            accent-color: #00ff41; /* Green accent color */
+            cursor: pointer;
+        }
+        #pongDifficultySelection button {
+            margin-top: 25px;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+        }
+
+
         .action-buttons {
             margin-top: 15px;
+            display: flex; /* Use flexbox for centering */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically if needed */
+            gap: 10px; /* Space between buttons */
         }
         .back-btn {
             background: #ff4444;
@@ -207,7 +264,7 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 20px;
+            /* margin-top: 20px; - Removed to align with gap and flex */
         }
         .back-btn:hover {
             background: #ff6666;
@@ -281,24 +338,24 @@
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
         }
 
-        @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .games-grid { grid-template-columns: 1fr; }
-            .game-canvas { width: 100%; max-width: 350px; }
-            .game-over-content {
-                padding: 20px;
-                margin: 0 15px;
-            }
-            .game-over-content h2 {
-                font-size: 2rem;
-            }
-            .game-over-content p {
-                font-size: 1.2rem;
-            }
-            .game-over-buttons button {
-                padding: 10px 20px;
-                font-size: 0.9rem;
-            }
+        /* Message Box Style */
+        .message-box {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffeb3b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #ffeb3b;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
+            display: none; /* Hidden by default */
+            position: absolute; /* Added for overlay behavior */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            max-width: 80%;
         }
     </style>
 </head>
@@ -306,7 +363,7 @@
     <div class="stars" id="stars"></div>
 
     <div class="container">
-        <header>
+        <header id="mainHeader">
             <h1>🎮 RETROARCADE 🎮</h1>
             <p class="subtitle">Classic Games Reimagined for the Web</p>
         </header>
@@ -342,18 +399,46 @@
                 <p class="game-description">Arrange falling blocks to form complete lines and clear them. Don't let the stack reach the top! Use Arrow Keys or WASD to move and rotate.</p>
                 <button class="play-btn">Play Now</button>
             </div>
+            <div class="game-card" onclick="startGame('minesweeper')">
+                <h3 class="game-title">💣 Hidden Grid</h3>
+                <p class="game-description">Clear the minefield without detonating any hidden mines! Click to reveal a square; if a number appears, it tells you how many mines are adjacent. Right-click (or Ctrl+Click) to flag suspected mine locations. Reveal all non-mine squares to win!</p>
+                <button class="play-btn">Play Now</button>
+            </div>
         </div>
 
         <div id="gameArea" class="game-area">
             <h2 id="gameTitle"></h2>
             <div class="score" id="scoreDisplay">Score: 0</div>
+            <!-- Minesweeper specific info display -->
+            <div id="minesweeperInfo" style="display: none;">
+                <span id="mineCountDisplay">Mines: 0</span>
+                <span id="timerDisplay">Time: 0s</span>
+            </div>
+            <!-- Pong Difficulty Selection -->
+            <div id="pongDifficultySelection">
+                <h3>Choose Difficulty:</h3>
+                <label>
+                    <input type="radio" name="pongDifficulty" value="easy" checked> Easy
+                </label>
+                <label>
+                    <input type="radio" name="pongDifficulty" value="hard"> Hard
+                </label>
+                <button class="play-btn" onclick="startSelectedPongDifficulty()">Start Cyber Pong</button>
+            </div>
             <canvas id="gameCanvas" class="game-canvas" width="600" height="400"></canvas>
             <div class="game-controls" id="gameControls"></div>
             <div class="action-buttons">
-                <button class="control-btn" id="restartGameButton" onclick="restartGame()" style="background: #ffaa00; margin-right: 10px;">🔄 Restart Game</button>
+                <!-- Restored and positioned Restart Game button -->
+                <button class="control-btn" id="restartGameButton" onclick="restartGame()" style="background: #ffaa00;">🔄 Restart Game</button>
                 <button class="back-btn" id="backToMenuButton" onclick="backToMenu()">← Back to Games</button>
             </div>
         </div>
+    </div>
+
+    <!-- Message box for start instructions or in-game messages -->
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button id="messageBoxOkBtn">OK</button>
     </div>
 
     <div id="gameOverOverlay" class="game-over-overlay">
@@ -384,19 +469,26 @@
         }
 
         let currentGame = null;
-        let animationFrameId = null; // Stores the requestAnimationFrame ID
-        let canvas, ctx;
+        let animationFrameId = null; // Stores the requestAnimationFrame ID for the active game
+        let canvas, ctx; // Main canvas and context
+
         const originalCanvasWidth = 600;
-        const originalCanvasHeight = 400; // Updated to match your canvas size
+        const originalCanvasHeight = 400;
 
         let score = 0;
         let gameState = {}; // Holds game-specific variables for the current game
 
-        // --- Keyboard Input Tracking ---
+        let gameActive = false; // Global flag to control game loop
+
+        // --- Keyboard Input Tracking (Centralized) ---
         const keysPressed = new Set(); // Tracks which keys are currently held down
 
         document.addEventListener('keydown', (e) => {
-            if (currentGame && !document.getElementById('gameOverOverlay').classList.contains('active')) {
+            // Only process input if a game is active AND the game over/start overlays are NOT active
+            if (gameActive && 
+                !document.getElementById('gameOverOverlay').classList.contains('active') &&
+                document.getElementById('messageBox').style.display !== 'block') { 
+                
                 const lowerKey = e.key.toLowerCase();
                 // Prevent default browser behavior for relevant keys
                 if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'w', 'a', 's', 'd'].includes(lowerKey)) {
@@ -406,6 +498,11 @@
 
                 // --- Game-specific input handling ---
                 switch (currentGame) {
+                    case 'dino':
+                        if (lowerKey === ' ' && !gameState.dino.isJumping) {
+                            gameState.dino.jump();
+                        }
+                        break;
                     case 'snake':
                         if (lowerKey === 'arrowup' || lowerKey === 'w') {
                             changeDirection('up');
@@ -417,36 +514,18 @@
                             changeDirection('right');
                         }
                         break;
-                    case 'dino':
-                        if (lowerKey === ' ' && !gameState.dino.isJumping) {
-                            gameState.dino.jump();
-                        }
-                        break;
-                    case 'pong':
-                        // Pong movement is continuous, controlled by keysPressed in updatePong
-                        break;
-                    case 'asteroids': // Asteroids input
+                    case 'asteroids':
                          if (lowerKey === ' ') {
-                            // lastShotTimeAsteroids is used in shootBulletAsteroids to handle cooldown
-                            // shootBulletAsteroids will check cooldown internally
                             shootBulletAsteroids();
                         }
-                        // Thrust and rotation are handled by checking keysPressed in updateAsteroids
                         break;
-                    case 'breakout': // Breakout input
-                        // Paddle movement handled by keysPressed in updateBreakout
-                        break;
-                    case 'tetris': // Tetris input
-                        // Logic for Tetris input handling is largely within updateTetris,
-                        // but hard drop and rotate are triggered on keydown to prevent continuous action.
+                    case 'tetris':
                         if (lowerKey === 'arrowup' || lowerKey === 'w') {
-                            // Check if the key was just pressed, not held down
-                            if (!e.repeat) {
+                            if (!e.repeat) { // Prevent multiple rotations on hold
                                 rotatePiece(gameState.currentPiece, 1);
                             }
-                        } else if (lowerKey === ' ') {
+                        } else if (lowerKey === ' ') { // Hard drop
                             if (!e.repeat) {
-                                // Hard drop: instantly move piece down as far as it can go
                                 while (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY + 1)) {
                                     gameState.pieceY++;
                                 }
@@ -465,13 +544,14 @@
         // --- Main Game Loop (requestAnimationFrame) ---
         let lastFrameTime = 0;
         function gameLoop(currentTime) {
-            if (!currentGame) return; // Stop loop if no game is active
+            // Stop if no game is selected or if game is not active
+            if (!currentGame || !gameActive) return; 
 
-            const deltaTime = (currentTime - lastFrameTime) / 1000; // Delta time in seconds
+            const deltaTime = (currentTime - lastFrameTime) / 1000;
             lastFrameTime = currentTime;
 
-            // Clear canvas at the beginning of each frame
-            ctx.fillStyle = '#000'; // Default background for all games
+            // Clear canvas
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Update and draw specific game
@@ -482,130 +562,292 @@
                 case 'asteroids': updateAsteroids(deltaTime); drawAsteroids(); break;
                 case 'breakout': updateBreakout(deltaTime); drawBreakout(); break;
                 case 'tetris': updateTetris(deltaTime); drawTetris(); break;
+                case 'minesweeper': updateMinesweeper(deltaTime); drawMinesweeper(); break;
             }
 
-            // Continue the loop
-            if (currentGame && !document.getElementById('gameOverOverlay').classList.contains('active')) {
+            // Continue the loop only if game is active and not showing a message or game over screen
+            if (gameActive && !document.getElementById('gameOverOverlay').classList.contains('active') &&
+                document.getElementById('messageBox').style.display !== 'block') { // Check if messageBox is NOT visible
                 animationFrameId = requestAnimationFrame(gameLoop);
             }
         }
 
-        function startGame(gameType) {
-            // Stop any existing animation frame loop
+        function startGame(gameType, difficulty = null) {
+            // Cancel any existing animation frame to prevent multiple loops
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
 
-            document.getElementById('gameSelection').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'flex';
+            // Hide main game selection grid and the header
+            document.getElementById('gameSelection').style.display = 'none'; 
+            document.getElementById('mainHeader').style.display = 'none';
+            
+            // Hide all overlays that might be active
             document.getElementById('gameOverOverlay').classList.remove('active');
+            document.getElementById('messageBox').style.display = 'none'; 
 
+            // Initialize canvas and context
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
-
-            // Reset canvas width/height to original for games that don't need specific sizes
-            // This needs to happen BEFORE game-specific init, as init functions might set their own sizes.
             canvas.width = originalCanvasWidth;
             canvas.height = originalCanvasHeight;
-            canvas.style.marginLeft = 'auto'; // Default to center
-            canvas.style.marginRight = 'auto'; // Default to center
-            canvas.style.width = 'auto'; // Reset custom width from Tetris if coming from it
-            canvas.style.height = 'auto'; // Reset custom height from Tetris if coming from it
+            // Center the canvas by making it block and auto margin
+            canvas.style.marginLeft = 'auto';
+            canvas.style.marginRight = 'auto';
+            canvas.style.width = 'auto'; // Reset width to default for non-tetris games
+            canvas.style.height = 'auto'; // Reset height to default for non-tetris games
+
+            // Hide game specific elements initially for all games
+            document.getElementById('minesweeperInfo').style.display = 'none';
+            document.getElementById('scoreDisplay').style.display = 'none';
+            document.getElementById('restartGameButton').style.display = 'none'; 
+            document.querySelector('.action-buttons').style.display = 'none'; 
+            canvas.style.display = 'none'; 
+
+            currentGame = gameType; // Set current game
+
+            // Clear game state and input keys for a fresh start
+            score = 0; // Reset score for the game that's about to start
+            updateScore(); // This will update the scoreDisplay element
+            keysPressed.clear();
+
+            // Remove previous Minesweeper-specific listeners (if any)
+            canvas.removeEventListener('click', handleMinesweeperClick);
+            canvas.removeEventListener('contextmenu', handleMinesweeperRightClick);
 
 
-            document.getElementById('gameTitle').textContent = getGameTitle(gameType);
-            setupControls(gameType); // Call setupControls to set specific instructions
-
-            // Reset score for new game
-            score = 0;
-            updateScore();
-            keysPressed.clear(); // Clear any lingering key states
-            
-            // Initialize game state specific to each game type
-            gameState = {}; // Clear previous game state
-            currentGame = gameType; // Set current game before initializing
-            switch(gameType) {
-                case 'dino': initDino(); break;
-                case 'snake': initSnake(); break;
-                case 'pong': initPong(); break;
-                case 'asteroids': initAsteroids(); break;
-                case 'breakout': initBreakout(); break;
-                case 'tetris': initTetris(); break;
+            // Game-specific initializations
+            if (gameType === 'pong' && difficulty === null) {
+                // For Pong, show difficulty selection first, and the gameArea frame
+                document.getElementById('gameArea').style.display = 'block'; // Show game area for Pong difficulty
+                document.getElementById('pongDifficultySelection').style.display = 'flex';
+                document.getElementById('gameTitle').textContent = '⚡ Cyber Pong - Select Difficulty';
+                // No need to initialize Pong game state yet, it will be done after difficulty selection
+            } else {
+                // For other games, only show the general start overlay, keep gameArea hidden for now
+                document.getElementById('gameArea').style.display = 'none'; // Keep game area hidden
+                document.getElementById('gameTitle').textContent = getGameTitle(gameType); // Update title even if hidden
+                const controlsText = getControlsText(gameType);
+                // Pass true for isStartOverlay to show 'Start Game' button
+                showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true);
+                
+                // Initialize game state (but don't start game loop until user clicks OK)
+                gameState = {}; // Clear previous game state
+                switch(gameType) {
+                    case 'dino': initDino(); break;
+                    case 'snake': initSnake(); break;
+                    // Pong is handled above if difficulty is null
+                    case 'asteroids': initAsteroids(); break;
+                    case 'breakout': initBreakout(); break;
+                    case 'tetris': initTetris(); break;
+                    case 'minesweeper': initMinesweeper(); break;
+                }
             }
-
-            lastFrameTime = performance.now(); // Initialize for the first frame
-            animationFrameId = requestAnimationFrame(gameLoop); // Start the new game loop
         }
 
-        function gameOver() {
-            // Stop the game loop
+        // Modified showMessage to distinguish start overlay messages
+        function showMessage(msg, isStartOverlay = false) {
+            messageText.innerHTML = msg;
+            
+            if (isStartOverlay) {
+                messageBoxOkBtn.textContent = 'Start Game';
+                messageBoxOkBtn.onclick = startGameFromOverlay; // Attach specific start function
+            } else { // Regular in-game message
+                messageBoxOkBtn.textContent = 'OK';
+                messageBoxOkBtn.onclick = hideMessage;
+            }
+            messageBox.style.display = 'block'; // This makes the message box visible
+            gameActive = false; // Pause game logic
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId); // Ensure loop stops when message is shown
+                animationFrameId = null;
+            }
+        }
+        
+        function hideMessage() {
+            messageBox.style.display = 'none';
+            // Reset messageBoxOkBtn's onclick in case it was modified for a start overlay
+            messageBoxOkBtn.onclick = hideMessage;
+            messageBoxOkBtn.textContent = 'OK'; 
+
+            gameActive = true; // Resume/start game logic
+            
+            // Show relevant info based on game type AFTER starting
+            if (currentGame === 'minesweeper') {
+                document.getElementById('minesweeperInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Minesweeper uses its own score/timer display
+            } else { // For other games
+                document.getElementById('minesweeperInfo').style.display = 'none';
+                document.getElementById('scoreDisplay').style.display = 'block';
+            }
+            
+            canvas.style.display = 'block'; // Show canvas now that instructions are hidden
+            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
+            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
+            
+            lastFrameTime = performance.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // New function to handle starting game from the overlay's "Start Game" button
+        function startGameFromOverlay() {
+            messageBox.style.display = 'none';
+            gameActive = true; // Set unified game active flag
+            
+            // Now, show the actual game elements within the gameArea
+            document.getElementById('gameArea').style.display = 'block'; // Show game area container
+            canvas.style.display = 'block'; // Show canvas
+            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
+            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
+            
+            // Show relevant info based on game type AFTER starting
+            if (currentGame === 'minesweeper') {
+                document.getElementById('minesweeperInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none';
+            }
+            else { // For other games
+                document.getElementById('minesweeperInfo').style.display = 'none';
+                document.getElementById('scoreDisplay').style.display = 'block';
+            }
+            
+            setupControls(currentGame); // Update controls display (now just clears the div)
+            lastFrameTime = performance.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+
+        function startSelectedPongDifficulty() {
+            const selectedDifficulty = document.querySelector('input[name="pongDifficulty"]:checked').value;
+            // Directly initialize and start Pong without the extra message box step
+            initializeGame('pong', selectedDifficulty); 
+            document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide difficulty selection
+            document.getElementById('gameTitle').textContent = getGameTitle('pong'); // Update title
+            // GameArea is already 'block' from startGame for Pong. Now show its contents.
+            document.getElementById('scoreDisplay').style.display = 'block'; // Show score display
+            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
+            canvas.style.display = 'block'; // Show canvas now that difficulty is selected
+            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
+            setupControls('pong'); // Setup controls (now just clears the div)
+            gameActive = true;
+            lastFrameTime = performance.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(status = 'lost') {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
-            
-            // Show game over overlay
-            document.getElementById('gameOverOverlay').classList.add('active');
-            document.getElementById('finalScoreDisplay').textContent = `Final Score: ${score}`;
+            gameActive = false; // Stop game logic
 
-            // Optional: Handle high score for individual games if desired
+            // Determine which overlay to use based on current game type
+            const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+            const gameOverH2 = document.getElementById('gameOverOverlay').querySelector('h2');
+            const gameOverContent = document.getElementById('gameOverOverlay').querySelector('.game-over-content');
+
+            if (currentGame === 'minesweeper') {
+                if (status === 'won') {
+                    gameOverH2.textContent = 'YOU WON!';
+                    gameOverH2.style.color = '#00ff41';
+                    gameOverH2.style.textShadow = '0 0 15px #00ff41';
+                    gameOverContent.style.borderColor = '#00ff41';
+                    finalScoreDisplay.textContent = `Time: ${gameState.timer}s`;
+                } else {
+                    gameOverH2.textContent = 'GAME OVER!';
+                    gameOverH2.style.color = '#ff0041';
+                    gameOverH2.style.textShadow = '0 0 15px #ff0041';
+                    gameOverContent.style.borderColor = '#ff0041';
+                    finalScoreDisplay.textContent = `You hit a mine!`;
+                }
+            } else {
+                gameOverH2.textContent = 'GAME OVER!';
+                gameOverH2.style.color = '#ff0041';
+                gameOverH2.style.textShadow = '0 0 15px #ff0041';
+                gameOverContent.style.borderColor = '#ff0041';
+                finalScoreDisplay.textContent = `Final Score: ${score}`;
+            }
+
+            document.getElementById('gameOverOverlay').classList.add('active');
+
+            // Handle high scores for various games
             if (currentGame === 'dino') {
                 let dinoHighScore = localStorage.getItem('dinoHighScore') || 0;
-                if (score > dinoHighScore) {
-                    localStorage.setItem('dinoHighScore', score);
-                }
+                if (score > dinoHighScore) { localStorage.setItem('dinoHighScore', score); }
             } else if (currentGame === 'pong') {
                 let pongHighScore = localStorage.getItem('pongHighScore') || 0;
-                if (score > pongHighScore) {
-                    localStorage.setItem('pongHighScore', score);
-                }
+                if (score > pongHighScore) { localStorage.setItem('pongHighScore', score); }
             } else if (currentGame === 'asteroids') {
                 let asteroidsHighScore = localStorage.getItem('asteroidsHighScore') || 0;
-                if (score > asteroidsHighScore) {
-                    localStorage.setItem('asteroidsHighScore', score);
-                }
+                if (score > asteroidsHighScore) { localStorage.setItem('asteroidsHighScore', score); }
             } else if (currentGame === 'breakout') {
                 let breakoutHighScore = localStorage.getItem('breakoutHighScore') || 0;
-                if (score > breakoutHighScore) {
-                    localStorage.setItem('breakoutHighScore', score);
-                }
-            } else if (currentGame === 'tetris') { // New: Tetris high score
+                if (score > breakoutHighScore) { localStorage.setItem('breakoutHighScore', score); }
+            } else if (currentGame === 'tetris') {
                 let tetrisHighScore = localStorage.getItem('tetrisHighScore') || 0;
-                if (score > tetrisHighScore) {
-                    localStorage.setItem('tetrisHighScore', score);
-                }
+                if (score > tetrisHighScore) { localStorage.setItem('tetrisHighScore', score); }
             }
         }
 
-
         function restartGame() {
+            // Cancel any running game loop
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
+            gameActive = false; // Ensure game is marked inactive before re-init
 
             score = 0;
             updateScore();
-            gameState = {}; // Reset game-specific state
-            keysPressed.clear(); // Clear key states on restart
+            gameState = {}; // Clear previous game state
+            keysPressed.clear(); // Clear any pressed keys
 
-            // Clear canvas visual immediately
+            // Clear canvas display
             if (ctx) {
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            initializeGame(currentGame); // Re-initialize the specific game
-            lastFrameTime = performance.now(); // Reset time for smooth restart
-            animationFrameId = requestAnimationFrame(gameLoop);
+            // Hide everything except the message box/difficulty selection
+            canvas.style.display = 'none';
+            document.getElementById('restartGameButton').style.display = 'none'; 
+            document.querySelector('.action-buttons').style.display = 'none'; 
+            document.getElementById('scoreDisplay').style.display = 'none'; 
+            document.getElementById('minesweeperInfo').style.display = 'none'; // Ensure Minesweeper info is hidden
+
+            if (currentGame === 'pong') {
+                startGame('pong', null); // Go back to difficulty selection
+            } else {
+                initializeGame(currentGame); 
+                const controlsText = getControlsText(currentGame);
+                showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true); 
+            }
         }
 
         function restartGameFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
-            document.getElementById('gameArea').style.display = 'flex';
-            restartGame();
+            
+            if (currentGame === 'pong') {
+                startGame('pong', null); 
+            } else {
+                initializeGame(currentGame); 
+                gameActive = true; 
+                document.getElementById('gameArea').style.display = 'block';
+                canvas.style.display = 'block'; 
+                document.getElementById('scoreDisplay').style.display = 'block';
+                document.getElementById('restartGameButton').style.display = 'block'; 
+                document.querySelector('.action-buttons').style.display = 'flex'; 
+                if (currentGame === 'minesweeper') {
+                    document.getElementById('minesweeperInfo').style.display = 'flex';
+                } else {
+                    document.getElementById('minesweeperInfo').style.display = 'none';
+                }
+                setupControls(currentGame); 
+                lastFrameTime = performance.now();
+                animationFrameId = requestAnimationFrame(gameLoop); 
+            }
         }
+
 
         function backToMenuFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
@@ -613,46 +855,69 @@
         }
 
         function backToMenu() {
+            // Cancel any running game loop
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
+            gameActive = false; // Reset gameActive when returning to menu
 
+            // Hide all game displays and overlays
             document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('gameSelection').style.display = 'grid';
-            currentGame = null;
-            score = 0; // Reset score when going back to menu
+            document.getElementById('pongDifficultySelection').style.display = 'none';
+            document.getElementById('messageBox').style.display = 'none';
+            document.getElementById('gameOverOverlay').classList.remove('active');
+
+            // Show main menu and header
+            document.getElementById('gameSelection').style.display = 'grid'; 
+            document.getElementById('mainHeader').style.display = 'block';
+            
+            currentGame = null; // Clear current game selection
+            score = 0; // Reset score for the menu
             updateScore();
-            keysPressed.clear();
+            keysPressed.clear(); // Clear any pressed keys
+
+            document.getElementById('minesweeperInfo').style.display = 'none'; // Hide Minesweeper info
+            document.getElementById('scoreDisplay').style.display = 'block'; // Ensure general score display is visible
+            document.getElementById('restartGameButton').style.display = 'none'; // Hide restart button when back to menu
+            document.querySelector('.action-buttons').style.display = 'none'; // Hide action buttons when back to menu
+
+            // Ensure canvas is hidden when going back to menu
+            if (canvas) {
+                canvas.style.display = 'none';
+            }
+
+            // Remove Minesweeper specific listeners
+            canvas.removeEventListener('click', handleMinesweeperClick);
+            canvas.removeEventListener('contextmenu', handleMinesweeperRightClick);
         }
 
         function updateScore() {
-            document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+            // This function is for traditional game scores only
+            if (currentGame !== 'minesweeper') { // Minesweeper has its own score display
+                document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+            }
         }
 
-        function initializeGame(gameType) {
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            // Canvas width/height might be overridden by game's init function
-            canvas.width = originalCanvasWidth;
-            canvas.height = originalCanvasHeight;
-            canvas.style.marginLeft = 'auto'; // Default to center
-            canvas.style.marginRight = 'auto'; // Default to center
-            canvas.style.width = 'auto'; // Reset custom width from Tetris if coming from it
-            canvas.style.height = 'auto'; // Reset custom height from Tetris if coming from it
+        // Helper function to initialize game state without starting the loop immediately
+        function initializeGame(gameType, difficulty = null) {
+            // This function now only handles the initial setup for traditional games
+            // Canvas/context is already set up by startGame for the correct game type.
 
-
+            if (ctx) { // Only clear if it's a traditional game canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
             document.getElementById('gameTitle').textContent = getGameTitle(gameType);
-            setupControls(gameType); // Call setupControls to set specific instructions
-
-            // Initialize game state specific to each game type
+            
             switch(gameType) {
                 case 'dino': initDino(); break;
                 case 'snake': initSnake(); break;
-                case 'pong': initPong(); break;
+                case 'pong': initPong(difficulty); break;
                 case 'asteroids': initAsteroids(); break;
                 case 'breakout': initBreakout(); break;
                 case 'tetris': initTetris(); break;
+                case 'minesweeper': initMinesweeper(); break;
             }
         }
 
@@ -663,196 +928,96 @@
                 pong: '⚡ Cyber Pong',
                 asteroids: '💫 Space Rocks',
                 breakout: '🧱 Block Destroyer',
-                tetris: '🟦 Pixel Tetris'
+                tetris: '🟦 Pixel Tetris',
+                minesweeper: '💣 Hidden Grid'
             };
             return titles[gameType];
         }
 
-        // Updated setupControls to provide specific keyboard instructions
-        function setupControls(gameType) {
-            const controlsDiv = document.getElementById('gameControls');
-            controlsDiv.innerHTML = ''; // Clear previous controls
-
+        function getControlsText(gameType) {
             let instructions = '';
             switch (gameType) {
-                case 'dino':
-                    instructions = 'Press **SPACEBAR** to jump over obstacles.';
-                    break;
-                case 'snake':
-                    instructions = 'Use **WASD** or **Arrow Keys** to change snake direction.';
-                    break;
-                case 'pong':
-                    instructions = 'Use **W** (Up) and **S** (Down) or **↑ Arrow** (Up) and **↓ Arrow** (Down) to move your paddle.';
-                    break;
-                case 'asteroids':
-                    instructions = 'Use **W** or **↑ Arrow** for thrust. Use **A** or **← Arrow** to rotate left. Use **D** or **→ Arrow** to rotate right. Press **SPACEBAR** to shoot.';
-                    break;
-                case 'breakout':
-                    instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your paddle.';
-                    break;
-                case 'tetris':
-                    instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.';
-                    break;
-                default:
-                    instructions = 'Keyboard controls.';
+                case 'dino': instructions = 'Press **SPACEBAR** to jump over obstacles.'; break;
+                case 'snake': instructions = 'Use **WASD** or **Arrow Keys** to change snake direction.'; break;
+                case 'pong': instructions = 'Use **W** (Up) and **S** (Down) or **↑ Arrow** (Up) and **↓ Arrow** (Down) to move your paddle.'; break;
+                case 'asteroids': instructions = 'Use **W** or **↑ Arrow** for thrust. Use **A** or **← Arrow** to rotate left. Use **D** (Right) or **→ Arrow** to rotate right. Press **SPACEBAR** to shoot.'; break;
+                case 'breakout': instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your paddle.'; break;
+                case 'tetris': instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.'; break;
+                case 'minesweeper': instructions = 'Click a square to reveal it. Right-click (or Ctrl+Click) to flag a mine. Clear all non-mine squares to win.'; break;
+                default: instructions = 'Keyboard controls.';
             }
-            controlsDiv.innerHTML = `<p>${instructions}</p>`;
+            return instructions;
+        }
+
+        function setupControls(gameType) {
+            const controlsDiv = document.getElementById('gameControls');
+            // Clear the content of the controls div, removing the green-fonted instructions.
+            controlsDiv.innerHTML = ''; 
         }
 
 
         // --- Dino Game ---
-        // Constants for Dino game rendering
-        const DINO_Y_OFFSET = 5; // Distance from the bottom of the canvas for ground line
-        const DINO_HEIGHT_DEFAULT = 50; // Dino default height on the 400px canvas
-        const DINO_WIDTH_DEFAULT = 30; // Dino default width
+        const DINO_Y_OFFSET = 5;
+        const DINO_HEIGHT_DEFAULT = 50;
+        const DINO_WIDTH_DEFAULT = 30;
         const GROUND_LINE_Y = originalCanvasHeight - DINO_Y_OFFSET;
 
-
         function initDino() {
-            // Adjust dino initial position for the 400px height canvas
             gameState.dino = {
-                x: 50,
-                y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT,
-                width: DINO_WIDTH_DEFAULT,
-                height: DINO_HEIGHT_DEFAULT,
-                dy: 0,
-                gravity: 0.5,
-                jumpStrength: -10,
-                isJumping: false,
+                x: 50, y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT, width: DINO_WIDTH_DEFAULT, height: DINO_HEIGHT_DEFAULT,
+                dy: 0, gravity: 0.5, jumpStrength: -10, isJumping: false,
                 draw() {
-                    ctx.fillStyle = '#00ff41'; // Bright green for dino
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
-
-                    // Simple dino head/neck for character
-                    ctx.beginPath();
-                    ctx.arc(this.x + this.width, this.y + this.height * 0.2, this.width * 0.5, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.beginPath();
-                    ctx.arc(this.x + this.width + 5, this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.fillStyle = '#1a1a2e'; // Eye color
-                    ctx.beginPath();
-                    ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2, 0, Math.PI * 2);
-                    ctx.fill();
+                    if (!ctx) return;
+                    ctx.fillStyle = '#00ff41'; ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.beginPath(); ctx.arc(this.x + this.width, this.y + this.height * 0.2, this.width * 0.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(this.x + this.width + 5, this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2, 0, Math.PI * 2); ctx.fill();
                 },
-                jump() {
-                    if (!this.isJumping) {
-                        this.dy = this.jumpStrength;
-                        this.isJumping = true;
-                    }
-                },
+                jump() { if (!this.isJumping) { this.dy = this.jumpStrength; this.isJumping = true; } },
                 update() {
-                    this.dy += this.gravity;
-                    this.y += this.dy;
-
-                    if (this.y + this.height > GROUND_LINE_Y) {
-                        this.y = GROUND_LINE_Y - this.height;
-                        this.dy = 0;
-                        this.isJumping = false;
-                    }
+                    this.dy += this.gravity; this.y += this.dy;
+                    if (this.y + this.height > GROUND_LINE_Y) { this.y = GROUND_LINE_Y - this.height; this.dy = 0; this.isJumping = false; }
                 }
             };
-
-            gameState.obstacles = [];
-            gameState.gameSpeed = 5;
-            gameState.obstacleSpawnTimer = 0;
-            gameState.obstacleSpawnInterval = 1500; // milliseconds
-
-            // High score is now shown by the game selection page, but we store it.
-            // localStorage.setItem('dinoHighScore', localStorage.getItem('dinoHighScore') || 0);
+            gameState.obstacles = []; gameState.gameSpeed = 5; gameState.obstacleSpawnTimer = 0; gameState.obstacleSpawnInterval = 1500;
         }
 
         function createDinoObstacle() {
-            const obstacleTypes = [
-                { width: 20, height: 40, color: '#ff0041' }, // Cactus 1
-                { width: 30, height: 60, color: '#ff0041' }, // Cactus 2
-                { width: 45, height: 25, color: '#ff0041', isFlying: true, yOffset: 100 } // Pterodactyl-like
-            ];
+            const obstacleTypes = [{ width: 20, height: 40, color: '#ff0041' }, { width: 30, height: 60, color: '#ff0041' }, { width: 45, height: 25, color: '#ff0041', isFlying: true, yOffset: 100 }];
             const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-
             gameState.obstacles.push({
-                x: canvas.width,
-                y: type.isFlying ? (GROUND_LINE_Y - type.height - type.yOffset) : (GROUND_LINE_Y - type.height),
-                width: type.width,
-                height: type.height,
-                color: type.color,
+                x: canvas.width, y: type.isFlying ? (GROUND_LINE_Y - type.height - type.yOffset) : (GROUND_LINE_Y - type.height),
+                width: type.width, height: type.height, color: type.color,
                 draw() {
-                    ctx.fillStyle = this.color;
-                    // For pterodactyl, draw a simple shape
+                    if (!ctx) return; ctx.fillStyle = this.color;
                     if (type.isFlying) {
-                         ctx.beginPath();
-                         ctx.moveTo(this.x, this.y + this.height * 0.5);
-                         ctx.lineTo(this.x + this.width, this.y);
-                         ctx.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.5);
-                         ctx.lineTo(this.x + this.width, this.y + this.height);
-                         ctx.lineTo(this.x, this.y + this.height * 0.5);
-                         ctx.fill();
-                    } else {
-                        ctx.fillRect(this.x, this.y, this.width, this.height);
-                    }
+                         ctx.beginPath(); ctx.moveTo(this.x, this.y + this.height * 0.5); ctx.lineTo(this.x + this.width, this.y); ctx.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.5); ctx.lineTo(this.x + this.width, this.y + this.height); ctx.lineTo(this.x, this.y + this.height * 0.5); ctx.fill();
+                    } else { ctx.fillRect(this.x, this.y, this.width, this.height); }
                 }
             });
         }
 
         function updateDino(deltaTime) {
-            // Update obstacles
             for (let i = 0; i < gameState.obstacles.length; i++) {
                 gameState.obstacles[i].x -= gameState.gameSpeed;
-
-                // Collision detection
-                const dino = gameState.dino;
-                const obstacle = gameState.obstacles[i];
-
-                if (
-                    dino.x < obstacle.x + obstacle.width &&
-                    dino.x + dino.width > obstacle.x &&
-                    dino.y < obstacle.y + obstacle.height &&
-                    dino.y + dino.height > obstacle.y
-                ) {
-                    gameOver();
-                    return; // Stop update if game over
+                const dino = gameState.dino; const obstacle = gameState.obstacles[i];
+                if (dino.x < obstacle.x + obstacle.width && dino.x + dino.width > obstacle.x && dino.y < obstacle.y + obstacle.height && dino.y + dino.height > obstacle.y) {
+                    gameOver(); return;
                 }
             }
-
-            // Filter out off-screen obstacles
             gameState.obstacles = gameState.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
-
-            // Spawn new obstacles
-            gameState.obstacleSpawnTimer += deltaTime * 1000; // Convert to milliseconds
+            gameState.obstacleSpawnTimer += deltaTime * 1000;
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
-                createDinoObstacle();
-                gameState.obstacleSpawnTimer = 0;
-                // Gradually increase game speed and decrease spawn interval
-                gameState.gameSpeed += 0.01;
-                gameState.obstacleSpawnInterval = Math.max(800, gameState.obstacleSpawnInterval - 5);
+                createDinoObstacle(); gameState.obstacleSpawnTimer = 0; gameState.gameSpeed += 0.01; gameState.obstacleSpawnInterval = Math.max(800, gameState.obstacleSpawnInterval - 5);
             }
-
-            // Update dino physics
-            gameState.dino.update();
-
-            // Update score
-            score++;
-            updateScore(); // Use the global updateScore function
+            gameState.dino.update(); score++; updateScore();
         }
 
         function drawDino() {
-            // Draw ground line
-            ctx.strokeStyle = '#00ff41'; // Green ground line
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(0, GROUND_LINE_Y);
-            ctx.lineTo(canvas.width, GROUND_LINE_Y);
-            ctx.stroke();
-
-            // Draw dino
+            if (!ctx) return;
+            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, GROUND_LINE_Y); ctx.lineTo(canvas.width, GROUND_LINE_Y); ctx.stroke();
             gameState.dino.draw();
-
-            // Draw obstacles
-            for (let obstacle of gameState.obstacles) {
-                obstacle.draw();
-            }
+            for (let obstacle of gameState.obstacles) { obstacle.draw(); }
         }
         // --- End Dino Game ---
 
@@ -860,438 +1025,195 @@
         // --- Snake Game ---
         function initSnake() {
             gameState = {
-                snake: [{x: 10, y: 10}],
-                food: {x: 15, y: 15},
-                direction: {x: 1, y: 0},
-                nextDirection: {x: 1, y: 0}, // For smooth input queueing
-                gridSize: 20,
-                speed: 10, // Grid units per second
-                timeSinceLastMove: 0 // Initialize this for Snake game
+                snake: [{x: 10, y: 10}], food: {x: 15, y: 15}, direction: {x: 1, y: 0}, nextDirection: {x: 1, y: 0},
+                gridSize: 20, speed: 10, timeSinceLastMove: 0
             };
             spawnFood();
         }
 
         function updateSnake(deltaTime) {
-            const moveInterval = 1 / gameState.speed; // Time in seconds for one grid unit move
+            const moveInterval = 1 / gameState.speed;
             gameState.timeSinceLastMove += deltaTime;
-
             if (gameState.timeSinceLastMove >= moveInterval) {
                 gameState.timeSinceLastMove -= moveInterval;
-
                 gameState.direction = gameState.nextDirection;
-                
-                const head = {
-                    x: gameState.snake[0].x + gameState.direction.x,
-                    y: gameState.snake[0].y + gameState.direction.y
-                };
-
-                const maxGridX = canvas.width / gameState.gridSize;
-                const maxGridY = canvas.height / gameState.gridSize;
-
-                if (head.x < 0 || head.x >= maxGridX ||
-                    head.y < 0 || head.y >= maxGridY) {
-                    gameOver();
-                    return;
-                }
-
+                const head = {x: gameState.snake[0].x + gameState.direction.x, y: gameState.snake[0].y + gameState.direction.y};
+                const maxGridX = canvas.width / gameState.gridSize; const maxGridY = canvas.height / gameState.gridSize;
+                if (head.x < 0 || head.x >= maxGridX || head.y < 0 || head.y >= maxGridY) { gameOver(); return; }
                 for (let i = 1; i < gameState.snake.length; i++) {
-                    const segment = gameState.snake[i];
-                    if (head.x === segment.x && head.y === segment.y) {
-                        gameOver();
-                        return;
-                    }
+                    const segment = gameState.snake[i]; if (head.x === segment.x && head.y === segment.y) { gameOver(); return; }
                 }
-
                 gameState.snake.unshift(head);
-
                 if (head.x === gameState.food.x && head.y === gameState.food.y) {
-                    score += 10;
-                    updateScore();
-                    // Increase speed slightly with score
-                    if (gameState.speed < 20) gameState.speed += 0.5;
-                    spawnFood();
-                } else {
-                    gameState.snake.pop();
-                }
+                    score += 10; updateScore(); if (gameState.speed < 20) gameState.speed += 0.5; spawnFood();
+                } else { gameState.snake.pop(); }
             }
         }
 
         function spawnFood() {
-            const maxGridX = canvas.width / gameState.gridSize;
-            const maxGridY = canvas.height / gameState.gridSize;
+            const maxGridX = canvas.width / gameState.gridSize; const maxGridY = canvas.height / gameState.gridSize;
             do {
-                gameState.food = {
-                    x: Math.floor(Math.random() * maxGridX),
-                    y: Math.floor(Math.random() * maxGridY)
-                };
-            } while (gameState.snake.some(segment =>
-                segment.x === gameState.food.x && segment.y === gameState.food.y));
+                gameState.food = {x: Math.floor(Math.random() * maxGridX), y: Math.floor(Math.random() * maxGridY)};
+            } while (gameState.snake.some(segment => segment.x === gameState.food.x && segment.y === gameState.food.y));
         }
 
         function drawSnake() {
+            if (!ctx) return;
             ctx.fillStyle = '#00ff41';
-            for (let segment of gameState.snake) {
-                ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize,
-                             gameState.gridSize - 2, gameState.gridSize - 2);
-            }
-
+            for (let segment of gameState.snake) { ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize, gameState.gridSize - 2, gameState.gridSize - 2); }
             ctx.fillStyle = '#ff0041';
-            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize,
-                             gameState.gridSize - 2, gameState.gridSize - 2);
+            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize, gameState.gridSize - 2, gameState.gridSize - 2);
         }
 
         function changeDirection(dir) {
             if (!gameState || !gameState.direction) return;
-
-            const directions = {
-                up: {x: 0, y: -1},
-                down: {x: 0, y: 1},
-                left: {x: -1, y: 0},
-                right: {x: 1, y: 0}
-            };
-
+            const directions = { up: {x: 0, y: -1}, down: {x: 0, y: 1}, left: {x: -1, y: 0}, right: {x: 1, y: 0} };
             const newDir = directions[dir];
-            if (newDir && (newDir.x !== -gameState.direction.x || newDir.y !== -gameState.direction.y)) {
-                gameState.nextDirection = newDir;
-            }
+            if (newDir && (newDir.x !== -gameState.direction.x || newDir.y !== -gameState.direction.y)) { gameState.nextDirection = newDir; }
         }
         // --- End Snake Game ---
 
         // --- Pong Game ---
-        function initPong() {
-            const initialBallSpeed = 280; // Adjusted ball speed to be slower
-            const randomXDir = Math.random() < 0.5 ? 1 : -1; // Random horizontal direction
-            const randomYDir = Math.random() < 0.5 ? 1 : -1; // Random vertical direction
-
+        function initPong(difficulty) {
+            gameState.difficulty = difficulty;
+            const initialBallSpeed = 280; const randomXDir = Math.random() < 0.5 ? 1 : -1; const randomYDir = Math.random() < 0.5 ? 1 : -1;
+            let aiPaddleSpeed;
+            if (difficulty === 'easy') { aiPaddleSpeed = 220; } else { aiPaddleSpeed = 350; }
             gameState = {
-                paddle1: {x: 10, y: canvas.height/2 - 50, width: 10, height: 100, dy: 0, speed: 200}, // speed in pixels/sec
-                paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: 350}, // AI speed unchanged
-                ball: {
-                    x: canvas.width/2,
-                    y: canvas.height/2,
-                    dx: initialBallSpeed * randomXDir, // Use consistent speed with random direction
-                    dy: initialBallSpeed * randomYDir, // Use consistent speed with random direction
-                    radius: 8
-                },
-                initialBallSpeed: initialBallSpeed // Store for easy reference during resets
+                ...gameState, paddle1: {x: 10, y: canvas.height/2 - 50, width: 10, height: 100, dy: 0, speed: 200},
+                paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: aiPaddleSpeed},
+                ball: { x: canvas.width/2, y: canvas.height/2, dx: initialBallSpeed * randomXDir, dy: initialBallSpeed * randomYDir, radius: 8 },
+                initialBallSpeed: initialBallSpeed
             };
-            score = 0; // Reset score for Pong game
-            updateScore();
+            score = 0; updateScore();
         }
 
         function updatePong(deltaTime) {
-            // Player paddle movement
-            if (keysPressed.has('arrowup') || keysPressed.has('w')) {
-                gameState.paddle1.y = Math.max(0, gameState.paddle1.y - gameState.paddle1.speed * deltaTime);
+            if (keysPressed.has('arrowup') || keysPressed.has('w')) { gameState.paddle1.y = Math.max(0, gameState.paddle1.y - gameState.paddle1.speed * deltaTime); }
+            if (keysPressed.has('arrowdown') || keysPressed.has('s')) { gameState.paddle1.y = Math.min(canvas.height - gameState.paddle1.height, gameState.paddle1.y + gameState.paddle1.speed * deltaTime); }
+            gameState.ball.x += gameState.ball.dx * deltaTime; gameState.ball.y += gameState.ball.dy * deltaTime;
+            if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
+            else if (gameState.ball.y + gameState.ball.radius >= canvas.height) { gameState.ball.y = canvas.height - gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
+            if (gameState.ball.dx < 0 && gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width && gameState.ball.y >= gameState.paddle1.y && gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height) {
+                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius; gameState.ball.dx = -gameState.ball.dx; gameState.ball.dy += (Math.random() * 50 - 25);
             }
-            if (keysPressed.has('arrowdown') || keysPressed.has('s')) {
-                gameState.paddle1.y = Math.min(canvas.height - gameState.paddle1.height, gameState.paddle1.y + gameState.paddle1.speed * deltaTime);
+            else if (gameState.ball.dx > 0 && gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x && gameState.ball.y >= gameState.paddle2.y && gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height) {
+                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius; gameState.ball.dx = -gameState.ball.dx; gameState.ball.dy += (Math.random() * 50 - 25);
             }
-
-            // Ball movement
-            gameState.ball.x += gameState.ball.dx * deltaTime;
-            gameState.ball.y += gameState.ball.dy * deltaTime;
-
-            // Ball collision with top/bottom walls
-            if (gameState.ball.y - gameState.ball.radius <= 0) {
-                gameState.ball.y = gameState.ball.radius; // Reposition to avoid sticking
-                gameState.ball.dy = -gameState.ball.dy;
-                // Removed playSound('bounce');
-            } else if (gameState.ball.y + gameState.ball.radius >= canvas.height) {
-                gameState.ball.y = canvas.height - gameState.ball.radius; // Reposition to avoid sticking
-                gameState.ball.dy = -gameState.ball.dy;
-                // Removed playSound('bounce');
+            if (gameState.ball.x < 0) { gameOver(); return; } else if (gameState.ball.x > canvas.width) {
+                 gameState.ball.x = canvas.width/2; gameState.ball.y = canvas.height/2;
+                 gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed; gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                 score += 1; updateScore();
             }
-
-            // Ball collision with paddles
-            // Paddle 1 (player)
-            if (gameState.ball.dx < 0 && // Moving left
-                gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width &&
-                gameState.ball.y >= gameState.paddle1.y &&
-                gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height) {
-                
-                // Reposition the ball to prevent sticking
-                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius;
-                
-                gameState.ball.dx = -gameState.ball.dx;
-                gameState.ball.dy += (Math.random() * 50 - 25); // Slight random vertical deflection
-                // Removed playSound('bounce');
-            }
-            // Paddle 2 (AI)
-            else if (gameState.ball.dx > 0 && // Moving right
-                gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x &&
-                gameState.ball.y >= gameState.paddle2.y &&
-                gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height) {
-                
-                // Reposition the ball to prevent sticking
-                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius;
-
-                gameState.ball.dx = -gameState.ball.dx;
-                gameState.ball.dy += (Math.random() * 50 - 25);
-                // Removed playSound('bounce');
-            }
-
-            // Ball out of bounds (score for AI or game over for player)
-            if (gameState.ball.x < 0) {
-                gameOver(); // Player loses a life or game over
-                return;
-            } else if (gameState.ball.x > canvas.width) {
-                 gameState.ball.x = canvas.width/2;
-                 gameState.ball.y = canvas.height/2;
-                 // Reset speed to initialBallSpeed, randomize direction
-                 gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
-                 gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
-                 score += 1; // AI scores
-                 updateScore();
-                 // Removed playSound('score');
-            }
-
-            // Smarter AI for Paddle 2:
-            let predictedY = gameState.ball.y; // Start with current y
-
-            // Only predict if the ball is moving towards the AI's side
-            // and has passed the halfway point (optional, but prevents over-predicting on player's side)
-            if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
-                const timeToReachPaddleX = (gameState.paddle2.x - gameState.ball.x) / gameState.ball.dx;
-
-                if (timeToReachPaddleX > 0) { // Ensure the ball is moving towards the paddle
-                    predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX;
-
-                    // Clamp predictedY to prevent it from going wildly off-screen in prediction
-                    predictedY = Math.max(0, Math.min(canvas.height, predictedY));
+            if (gameState.difficulty === 'easy') {
+                let aiTargetY = gameState.ball.y - gameState.paddle2.height / 2; aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                const moveAmount = gameState.paddle2.speed * deltaTime;
+                if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
+                else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
+            } else {
+                let predictedY = gameState.ball.y;
+                if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
+                    const timeToReachPaddleX = (gameState.paddle2.x - gameState.ball.x) / gameState.ball.dx;
+                    if (timeToReachPaddleX > 0) { predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX; predictedY = Math.max(0, Math.min(canvas.height, predictedY)); }
                 }
-            }
-
-            // Introduce a slight "jitter" or "human error" to the target, scaled down
-            const humanError = (Math.random() - 0.5) * 15; // +/- 7.5 pixels
-            let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError;
-
-            // Clamp AI target to paddle limits
-            aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
-
-            // Move paddle towards the target
-            const moveAmount = gameState.paddle2.speed * deltaTime;
-            if (gameState.paddle2.y < aiTargetY) {
-                gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount);
-            } else if (gameState.paddle2.y > aiTargetY) {
-                gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount);
+                const humanError = (Math.random() - 0.5) * 15;
+                let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError; aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                const moveAmount = gameState.paddle2.speed * deltaTime;
+                if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
+                else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
             }
         }
 
         function drawPong() {
-            ctx.fillStyle = '#00ff41'; // Player paddle color
-            ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y,
-                         gameState.paddle1.width, gameState.paddle1.height);
-            ctx.fillStyle = '#ff0041'; // AI paddle color
-            ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y,
-                         gameState.paddle2.width, gameState.paddle2.height);
-
-            ctx.fillStyle = '#00ffff'; // Ball color
-            ctx.beginPath();
-            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Draw center dashed line
-            ctx.strokeStyle = '#00ff41';
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.moveTo(canvas.width/2, 0);
-            ctx.lineTo(canvas.width/2, canvas.height);
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset line dash to avoid affecting other drawings
+            if (!ctx) return;
+            ctx.fillStyle = '#00ff41'; ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
+            ctx.fillStyle = '#ff0041'; ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
+            ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#00ff41'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke(); ctx.setLineDash([]);
         }
         // --- End Pong Game ---
 
         // --- Asteroids Game ---
-        const ASTEROIDS_SHOOT_COOLDOWN = 0.2; // seconds
-        let lastShotTimeAsteroids = 0; // Global variable to track last shot time for asteroids
+        const ASTEROIDS_SHOOT_COOLDOWN = 0.2;
+        let lastShotTimeAsteroids = 0;
 
         function initAsteroids() {
             gameState = {
-                ship: {x: canvas.width/2, y: canvas.height/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150, rotationSpeed: 3}, // Thrust & rotation in units/sec
-                bullets: [],
-                asteroids: []
+                ship: {x: canvas.width/2, y: canvas.height/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150, rotationSpeed: 3},
+                bullets: [], asteroids: []
             };
-
-            for (let i = 0; i < 5; i++) {
-                spawnAsteroid(3); // Start with large asteroids
-            }
-            score = 0; // Reset score for Asteroids game
-            updateScore();
+            for (let i = 0; i < 5; i++) { spawnAsteroid(3); }
+            score = 0; updateScore();
         }
 
         function updateAsteroids(deltaTime) {
-            // Apply keyboard inputs for movement and rotation
-            if (keysPressed.has('arrowup') || keysPressed.has('w')) {
-                gameState.ship.vx += Math.cos(gameState.ship.angle) * gameState.ship.thrust * deltaTime;
-                gameState.ship.vy += Math.sin(gameState.ship.angle) * gameState.ship.thrust * deltaTime;
-            }
-            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                gameState.ship.angle -= gameState.ship.rotationSpeed * deltaTime;
-            }
-            if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                gameState.ship.angle += gameState.ship.rotationSpeed * deltaTime;
-            }
-            // For desktop spacebar, shoot still
-            // The actual shootBulletAsteroids function is called from keydown, but we keep this here
-            // in case continuous firing is desired by holding down space.
-            // However, current implementation calls shootBulletAsteroids on keydown only.
-
-            // Update ship position and apply friction
-            gameState.ship.x += gameState.ship.vx * deltaTime;
-            gameState.ship.y += gameState.ship.vy * deltaTime;
-            gameState.ship.vx *= (1 - 0.5 * deltaTime); // Friction, adjust factor as needed
-            gameState.ship.vy *= (1 - 0.5 * deltaTime);
-
-            // Wrap ship around screen edges
-            if (gameState.ship.x < 0) gameState.ship.x = canvas.width;
-            if (gameState.ship.x > canvas.width) gameState.ship.x = 0;
-            if (gameState.ship.y < 0) gameState.ship.y = canvas.height;
-            if (gameState.ship.y > canvas.height) gameState.ship.y = 0;
-
-            // Update bullet positions and filter out-of-bounds bullets
+            if (keysPressed.has('arrowup') || keysPressed.has('w')) { gameState.ship.vx += Math.cos(gameState.ship.angle) * gameState.ship.thrust * deltaTime; gameState.ship.vy += Math.sin(gameState.ship.angle) * gameState.ship.thrust * deltaTime; }
+            if (keysPressed.has('arrowleft') || keysPressed.has('a')) { gameState.ship.angle -= gameState.ship.rotationSpeed * deltaTime; }
+            if (keysPressed.has('arrowright') || keysPressed.has('d')) { gameState.ship.angle += gameState.ship.rotationSpeed * deltaTime; }
+            gameState.ship.x += gameState.ship.vx * deltaTime; gameState.ship.y += gameState.ship.vy * deltaTime;
+            gameState.ship.vx *= (1 - 0.5 * deltaTime); gameState.ship.vy *= (1 - 0.5 * deltaTime);
+            if (gameState.ship.x < 0) gameState.ship.x = canvas.width; if (gameState.ship.x > canvas.width) gameState.ship.x = 0;
+            if (gameState.ship.y < 0) gameState.ship.y = canvas.height; if (gameState.ship.y > canvas.height) gameState.ship.y = 0;
             gameState.bullets = gameState.bullets.filter(bullet => {
-                bullet.x += bullet.vx * deltaTime;
-                bullet.y += bullet.vy * deltaTime;
+                bullet.x += bullet.vx * deltaTime; bullet.y += bullet.vy * deltaTime;
                 return bullet.x > -10 && bullet.x < canvas.width + 10 && bullet.y > -10 && bullet.y < canvas.height + 10;
             });
-
-            // Update asteroid positions
             gameState.asteroids.forEach(asteroid => {
-                asteroid.x += asteroid.vx * deltaTime;
-                asteroid.y += asteroid.vy * deltaTime;
-
-                if (asteroid.x < 0) asteroid.x = canvas.width;
-                if (asteroid.x > canvas.width) asteroid.x = 0;
-                if (asteroid.y < 0) asteroid.y = canvas.height;
-                if (asteroid.y > canvas.height) asteroid.y = 0;
+                asteroid.x += asteroid.vx * deltaTime; asteroid.y += asteroid.vy * deltaTime;
+                if (asteroid.x < 0) asteroid.x = canvas.width; if (asteroid.x > canvas.width) asteroid.x = 0;
+                if (asteroid.y < 0) asteroid.y = canvas.height; if (asteroid.y > canvas.height) asteroid.y = 0;
             });
-
-            // Bullet-Asteroid Collision Detection
             for (let bIndex = gameState.bullets.length - 1; bIndex >= 0; bIndex--) {
                 const bullet = gameState.bullets[bIndex];
                 for (let aIndex = gameState.asteroids.length - 1; aIndex >= 0; aIndex--) {
                     const asteroid = gameState.asteroids[aIndex];
-
-                    const dx = bullet.x - asteroid.x;
-                    const dy = bullet.y - asteroid.y;
+                    const dx = bullet.x - asteroid.x; const dy = bullet.y - asteroid.y;
                     if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius) {
-                        gameState.bullets.splice(bIndex, 1);
-                        score += 100;
-                        updateScore();
-
-                        if (asteroid.size > 1) { // Break larger asteroids into smaller ones
-                            spawnAsteroid(asteroid.size - 1, asteroid.x, asteroid.y);
-                            spawnAsteroid(asteroid.size - 1, asteroid.x, asteroid.y);
-                        }
-                        gameState.asteroids.splice(aIndex, 1);
-                        break; // Break from inner loop as bullet is destroyed
+                        gameState.bullets.splice(bIndex, 1); score += 100; updateScore();
+                        if (asteroid.size > 1) { spawnAsteroid(asteroid.size - 1, asteroid.x, asteroid.y); spawnAsteroid(asteroid.size - 1, asteroid.x, asteroid.y); }
+                        gameState.asteroids.splice(aIndex, 1); break;
                     }
                 }
             }
-
-            // Ship-Asteroid Collision Detection
             for (let asteroid of gameState.asteroids) {
-                const dx = gameState.ship.x - asteroid.x;
-                const dy = gameState.ship.y - asteroid.y;
-                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + 10) { // +10 for ship's rough radius
-                    gameOver();
-                    return; // Stop update if game over
-                }
+                const dx = gameState.ship.x - asteroid.x; const dy = gameState.ship.y - asteroid.y;
+                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + 10) { gameOver(); return; }
             }
-
-            // Respawn asteroids if all are destroyed
             if (gameState.asteroids.length === 0) {
-                const levelMultiplier = Math.floor(score / 500) + 1; // Increase difficulty
-                for (let i = 0; i < 5 + levelMultiplier; i++) {
-                    spawnAsteroid(3); // Spawn large asteroids
-                }
+                const levelMultiplier = Math.floor(score / 500) + 1;
+                for (let i = 0; i < 5 + levelMultiplier; i++) { spawnAsteroid(3); }
             }
         }
 
         function drawAsteroids() {
-            ctx.save();
-            ctx.translate(gameState.ship.x, gameState.ship.y);
-            ctx.rotate(gameState.ship.angle);
-            ctx.strokeStyle = '#00ff41'; // Ship color
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(15, 0);      // Nose
-            ctx.lineTo(-10, -10);   // Back left
-            ctx.lineTo(-5, 0);      // Middle back (for gap)
-            ctx.lineTo(-10, 10);    // Back right
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
-
-            // Draw Bullets
-            ctx.fillStyle = '#00ffff'; // Bullet color
-            gameState.bullets.forEach(bullet => {
-                ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw Asteroids
-            ctx.strokeStyle = '#ff4444'; // Asteroid color
-            ctx.lineWidth = 2;
-            gameState.asteroids.forEach(asteroid => {
-                ctx.beginPath();
-                ctx.arc(asteroid.x, asteroid.y, asteroid.radius, 0, Math.PI * 2);
-                ctx.stroke();
-            });
+            if (!ctx) return;
+            ctx.save(); ctx.translate(gameState.ship.x, gameState.ship.y); ctx.rotate(gameState.ship.angle);
+            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-10, -10); ctx.lineTo(-5, 0); ctx.lineTo(-10, 10); ctx.closePath(); ctx.stroke(); ctx.restore();
+            ctx.fillStyle = '#00ffff'; gameState.bullets.forEach(bullet => { ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 2, 0, Math.PI * 2); ctx.fill(); });
+            ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2; gameState.asteroids.forEach(asteroid => { ctx.beginPath(); ctx.arc(asteroid.x, asteroid.y, asteroid.radius, 0, Math.PI * 2); ctx.stroke(); });
         }
 
         function shootBulletAsteroids() {
-            const currentTime = performance.now() / 1000; // Time in seconds
+            const currentTime = performance.now() / 1000;
             if (currentTime - lastShotTimeAsteroids > ASTEROIDS_SHOOT_COOLDOWN) {
                 gameState.bullets.push({
-                    x: gameState.ship.x + Math.cos(gameState.ship.angle) * 15,
-                    y: gameState.ship.y + Math.sin(gameState.ship.angle) * 15,
-                    vx: Math.cos(gameState.ship.angle) * 300 + gameState.ship.vx, // Bullet speed (pixels/sec) + ship's current velocity
-                    vy: Math.sin(gameState.ship.angle) * 300 + gameState.ship.vy
+                    x: gameState.ship.x + Math.cos(gameState.ship.angle) * 15, y: gameState.ship.y + Math.sin(gameState.ship.angle) * 15,
+                    vx: Math.cos(gameState.ship.angle) * 300 + gameState.ship.vx, vy: Math.sin(gameState.ship.angle) * 300 + gameState.ship.vy
                 });
-                lastShotTimeAsteroids = currentTime; // Update last shot time
+                lastShotTimeAsteroids = currentTime;
             }
         }
 
-        // Helper to spawn asteroids with different sizes
         function spawnAsteroid(size, x = null, y = null) {
-            const radiusMap = {
-                3: 40, // Large
-                2: 25, // Medium
-                1: 15  // Small
-            };
-            const speedMap = {
-                3: 60,
-                2: 90,
-                1: 120
-            };
-
-            const asteroidRadius = radiusMap[size];
-            const asteroidSpeed = speedMap[size];
-
-            // If x, y are not provided (initial spawn), place randomly, avoiding ship
-            let asteroidX = x !== null ? x : Math.random() * canvas.width;
-            let asteroidY = y !== null ? y : Math.random() * canvas.height;
-
-            // Ensure initial large asteroids don't spawn too close to the ship (only for initial spawn, not for broken pieces)
-            if (size === 3 && x === null && gameState.ship) { // Check gameState.ship exists for first spawn
+            const radiusMap = { 3: 40, 2: 25, 1: 15 }; const speedMap = { 3: 60, 2: 90, 1: 120 };
+            const asteroidRadius = radiusMap[size]; const asteroidSpeed = speedMap[size];
+            let asteroidX = x !== null ? x : Math.random() * canvas.width; let asteroidY = y !== null ? y : Math.random() * canvas.height;
+            if (size === 3 && x === null && gameState.ship) {
                 while (Math.sqrt(Math.pow(asteroidX - gameState.ship.x, 2) + Math.pow(asteroidY - gameState.ship.y, 2)) < 150) {
-                    asteroidX = Math.random() * canvas.width;
-                    asteroidY = Math.random() * canvas.height;
+                    asteroidX = Math.random() * canvas.width; asteroidY = Math.random() * canvas.height;
                 }
             }
-
-
-            gameState.asteroids.push({
-                x: asteroidX,
-                y: asteroidY,
-                vx: (Math.random() - 0.5) * asteroidSpeed, // Random direction
-                vy: (Math.random() - 0.5) * asteroidSpeed, // Random direction
-                radius: asteroidRadius,
-                size: size // 3: large, 2: medium, 1: small
-            });
+            gameState.asteroids.push({ x: asteroidX, y: asteroidY, vx: (Math.random() - 0.5) * asteroidSpeed, vy: (Math.random() - 0.5) * asteroidSpeed, radius: asteroidRadius, size: size });
         }
         // --- End Asteroids Game ---
 
@@ -1299,333 +1221,141 @@
         // --- Breakout Game ---
         function initBreakout() {
             gameState = {
-                paddle: {x: canvas.width/2 - 50, y: canvas.height - 20, width: 100, height: 10, speed: 250}, // Pixels/sec
-                ball: {x: canvas.width/2, y: canvas.height - 30, vx: 180, vy: -180, radius: 8, prevX: 0, prevY: 0}, // Added prevX, prevY
-                blocks: [],
-                blocksRemaining: 0
+                paddle: {x: canvas.width/2 - 50, y: canvas.height - 20, width: 100, height: 10, speed: 250},
+                ball: {x: canvas.width/2, y: canvas.height - 30, vx: 250, vy: -250, radius: 8, prevX: 0, prevY: 0},
+                blocks: [], blocksRemaining: 0
             };
-            
-            const blockWidth = 55;
-            const blockHeight = 15;
-            const blockPadding = 5;
-            const blockOffsetTop = 50;
-            const blocksPerRow = 10;
+            const blockWidth = 55; const blockHeight = 15; const blockPadding = 5; const blockOffsetTop = 50; const blocksPerRow = 10;
             const blockOffsetLeft = (canvas.width - (blocksPerRow * blockWidth + (blocksPerRow - 1) * blockPadding)) / 2;
-            
-            for (let row = 0; row < 5; row++) { // 'row' goes from 0 to 4
+            for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < blocksPerRow; col++) {
-                    gameState.blocks.push({
-                        x: col * (blockWidth + blockPadding) + blockOffsetLeft,
-                        y: row * (blockHeight + blockPadding) + blockOffsetTop,
-                        width: blockWidth,
-                        height: blockHeight,
-                        color: `hsl(${row * 50}, 100%, 50%)`,
-                        // hits property for multi-hit blocks:
-                        // For row 0 (front): 5 - 0 = 5 hits
-                        // For row 1: 5 - 1 = 4 hits
-                        // For row 2: 5 - 2 = 3 hits
-                        // For row 3: 5 - 3 = 2 hits
-                        // For row 4 (back): 5 - 4 = 1 hit
-                        hits: 5 - row 
+                    gameState.blocks.push({ x: col * (blockWidth + blockPadding) + blockOffsetLeft, y: row * (blockHeight + blockPadding) + blockOffsetTop,
+                        width: blockWidth, height: blockHeight, color: `hsl(${row * 50}, 100%, 50%)`, hits: 5 - row
                     });
                     gameState.blocksRemaining++;
                 }
             }
-            score = 0; // Reset score for Breakout game
-            updateScore();
+            score = 0; updateScore();
         }
 
-        // Helper function to check AABB collision
         function checkCollision(ball, rect) {
-            // Check if ball is touching or overlapping rect
-            return ball.x + ball.radius > rect.x &&
-                   ball.x - ball.radius < rect.x + rect.width &&
-                   ball.y + ball.radius > rect.y &&
-                   ball.y - ball.radius < rect.y + rect.height;
+            return ball.x + ball.radius > rect.x && ball.x - ball.radius < rect.x + rect.width &&
+                   ball.y + ball.radius > rect.y && ball.y - ball.radius < rect.y + rect.height;
         }
         
-        // Helper function to get point of impact and normal
         function getCollisionResponse(ball, block) {
-            let hitX = false; // Did it hit horizontally?
-            let hitY = false; // Did it hit vertically?
-        
-            // Determine if horizontal or vertical collision occurred
-            // Check if ball was outside horizontally and moved inside
-            if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) { // Hit left side of block
-                ball.x = block.x - ball.radius; // Reposition
-                ball.vx *= -1;
-                hitX = true;
-            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) { // Hit right side
-                ball.x = block.x + block.width + ball.radius; // Reposition
-                ball.vx *= -1;
-                hitX = true;
+            let hitX = false; let hitY = false;
+            if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) {
+                ball.x = block.x - ball.radius; ball.vx *= -1; hitX = true;
+            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) {
+                ball.x = block.x + block.width + ball.radius; ball.vx *= -1; hitX = true;
             }
-        
-            // Check if ball was outside vertically and moved inside
-            if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) { // Hit top side
-                ball.y = block.y - ball.radius; // Reposition
-                ball.vy *= -1;
-                hitY = true;
-            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) { // Hit bottom side
-                ball.y = block.y + block.height + ball.radius; // Reposition
-                ball.vy *= -1;
-                hitY = true;
+            if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) {
+                ball.y = block.y - ball.radius; ball.vy *= -1; hitY = true;
+            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) {
+                ball.y = block.y + block.height + ball.radius; ball.vy *= -1; hitY = true;
             }
-        
-            // If it hit a corner, both hitX and hitY could be true, but prioritize the stronger axis of penetration
-            // For simplicity in Breakout, usually one axis dominates.
-            // This basic logic handles the most common cases correctly.
-            
-            return hitX || hitY; // Return true if any collision occurred
+            return hitX || hitY;
         }
-        
         
         function updateBreakout(deltaTime) {
-            // Paddle movement
-            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime);
+            if (keysPressed.has('arrowleft') || keysPressed.has('a')) { gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime); }
+            if (keysPressed.has('arrowright') || keysPressed.has('d')) { gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime); }
+            gameState.ball.prevX = gameState.ball.x; gameState.ball.prevY = gameState.ball.y;
+            gameState.ball.x += gameState.ball.vx * deltaTime; gameState.ball.y += gameState.ball.vy * deltaTime;
+            if (gameState.ball.x - gameState.ball.radius <= 0) { gameState.ball.x = gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
+            else if (gameState.ball.x + gameState.ball.radius >= canvas.width) { gameState.ball.x = canvas.width - gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
+            if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy; }
+            if (gameState.ball.vy > 0 && gameState.ball.x + gameState.ball.radius > gameState.paddle.x && gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width && gameState.ball.y + gameState.ball.radius >= gameState.paddle.y && gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
+                gameState.ball.y = gameState.paddle.y - gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy;
+                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2;
             }
-            if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime);
-            }
-        
-            // Store previous ball position for more accurate collision detection
-            gameState.ball.prevX = gameState.ball.x;
-            gameState.ball.prevY = gameState.ball.y;
-        
-            // Ball movement
-            gameState.ball.x += gameState.ball.vx * deltaTime;
-            gameState.ball.y += gameState.ball.vy * deltaTime;
-        
-            // Ball collision with walls
-            if (gameState.ball.x - gameState.ball.radius <= 0) {
-                gameState.ball.x = gameState.ball.radius; // Reposition
-                gameState.ball.vx = -gameState.ball.vx;
-                // Removed playSound('bounce');
-            } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
-                gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
-                gameState.ball.vx = -gameState.ball.vx; // Fix: Reference to gameState.ball
-                // Removed playSound('bounce');
-            }
-        
-            if (gameState.ball.y - gameState.ball.radius <= 0) {
-                gameState.ball.y = gameState.ball.radius; // Reposition
-                gameState.ball.vy = -gameState.ball.vy;
-                // Removed playSound('bounce');
-            }
-        
-            // Ball collision with paddle
-            // Check if ball hit the paddle from above (moving downwards)
-            if (gameState.ball.vy > 0 &&
-                gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
-                gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
-                gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
-                gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) // Ensure it crossed the top edge
-            {
-                // Reposition the ball on top of the paddle to prevent sticking
-                gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
-            
-                gameState.ball.vy = -gameState.ball.vy;
-                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
-                gameState.ball.vx = hitPoint * 2; // Adjust X velocity based on hit location
-                // Removed playSound('bounce');
-            }
-        
-            // Ball collision with blocks
-            // Iterate backwards to safely remove elements during iteration
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
                 const block = gameState.blocks[i];
-            
                 if (checkCollision(gameState.ball, block)) {
-                    // This is a collision! Now handle the bounce and update block hits.
                     if (getCollisionResponse(gameState.ball, block)) {
-                        block.hits--; // Decrease the hits property
-                        if (block.hits <= 0) { // Only remove if hits are 0 or less
-                            score += 10;
-                            updateScore();
-                            gameState.blocks.splice(i, 1);
-                            gameState.blocksRemaining--;
-                            // Removed playSound('block_break');
-                        }
-                        // If the block is not destroyed, its color might change based on hits remaining
-                        // This logic could be added in drawBreakout based on block.hits
-
-                        break; // Stop after hitting one block to prevent multiple deletions
+                        block.hits--;
+                        if (block.hits <= 0) { score += 10; updateScore(); gameState.blocks.splice(i, 1); gameState.blocksRemaining--; }
+                        break;
                     }
                 }
             }
-        
-            // Game over if ball goes below paddle
-            if (gameState.ball.y - gameState.ball.radius > canvas.height) {
-                gameOver();
-                return;
-            }
-        
-            // Win condition
-            if (gameState.blocksRemaining === 0) {
-                // Removed alert, now it will just trigger the standard gameOver overlay
-                gameOver(); // Call game over to stop loop and show overlay
-                return;
-            }
+            if (gameState.ball.y - gameState.ball.radius > canvas.height) { gameOver(); return; }
+            if (gameState.blocksRemaining === 0) { gameOver(); return; }
         }
         
         function drawBreakout() {
-            ctx.fillStyle = '#00ff41'; // Paddle color
-            ctx.fillRect(gameState.paddle.x, gameState.paddle.y,
-                         gameState.paddle.width, gameState.paddle.height);
-        
-            ctx.fillStyle = '#00ffff'; // Ball color
-            ctx.beginPath();
-            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
-            ctx.fill();
-        
+            if (!ctx) return;
+            ctx.fillStyle = '#00ff41'; ctx.fillRect(gameState.paddle.x, gameState.paddle.y, gameState.paddle.width, gameState.paddle.height);
+            ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2); ctx.fill();
             gameState.blocks.forEach(block => {
-                // You could also change the color based on the remaining hits here for visual feedback
-                // For example, make it darker or a different shade with fewer hits remaining.
-                ctx.fillStyle = block.color;
-                ctx.fillRect(block.x, block.y, block.width, block.height);
-                ctx.strokeStyle = '#222'; // Block border
-                ctx.strokeRect(block.x, block.y, block.width, block.height);
+                ctx.fillStyle = block.color; ctx.fillRect(block.x, block.y, block.width, block.height);
+                ctx.strokeStyle = '#222'; ctx.strokeRect(block.x, block.y, block.width, block.height);
             });
         }
         // --- End Breakout Game ---
 
 
         // --- Tetris Game ---
-        const TETRIS_COLS = 10;
-        const TETRIS_ROWS = 20;
-        const TETRIS_BLOCK_SIZE = 20; // Size of each square block in pixels
+        const TETRIS_COLS = 10; const TETRIS_ROWS = 20; const TETRIS_BLOCK_SIZE = 20;
 
-        // Tetromino shapes and their colors (relative coordinates)
         const TETROMINOS = {
-            'I': {
-                shape: [
-                    [0, 0, 0, 0],
-                    [1, 1, 1, 1],
-                    [0, 0, 0, 0],
-                    [0, 0, 0, 0]
-                ],
-                color: '#00ffff' // Cyan
-            },
-            'J': {
-                shape: [
-                    [1, 0, 0],
-                    [1, 1, 1],
-                    [0, 0, 0]
-                ],
-                color: '#0000ff' // Blue
-            },
-            'L': {
-                shape: [
-                    [0, 0, 1],
-                    [1, 1, 1],
-                    [0, 0, 0]
-                ],
-                color: '#ffa500' // Orange
-            },
-            'O': {
-                shape: [
-                    [1, 1],
-                    [1, 1]
-                ],
-                color: '#ffff00' // Yellow
-            },
-            'S': {
-                shape: [
-                    [0, 1, 1],
-                    [1, 1, 0],
-                    [0, 0, 0]
-                ],
-                color: '#00ff00' // Green
-            },
-            'T': {
-                shape: [
-                    [0, 1, 0],
-                    [1, 1, 1],
-                    [0, 0, 0]
-                ],
-                color: '#800080' // Purple
-            },
-            'Z': {
-                shape: [
-                    [1, 1, 0],
-                    [0, 1, 1],
-                    [0, 0, 0]
-                ],
-                color: '#ff0000' // Red
-            }
+            'I': { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#00ffff' },
+            'J': { shape: [[1, 0, 0], [1, 1, 1], [0, 0, 0]], color: '#0000ff' },
+            'L': { shape: [[0, 0, 1], [1, 1, 1], [0, 0, 0]], color: '#ffa500' },
+            'O': { shape: [[1, 1], [1, 1]], color: '#ffff00' },
+            'S': { shape: [[0, 1, 1], [1, 1, 0], [0, 0, 0]], color: '#00ff00' },
+            'T': { shape: [[0, 1, 0], [1, 1, 1], [0, 0, 0]], color: '#800080' },
+            'Z': { shape: [[1, 1, 0], [0, 1, 1], [0, 0, 0]], color: '#ff0000' }
         };
 
         function initTetris() {
-            // Adjust canvas size for Tetris
-            canvas.width = TETRIS_COLS * TETRIS_BLOCK_SIZE; // 10 * 20 = 200
-            canvas.height = TETRIS_ROWS * TETRIS_BLOCK_SIZE; // 20 * 20 = 400
-
-            // Center the canvas in the game area
-            canvas.style.marginLeft = 'auto';
-            canvas.style.marginRight = 'auto';
-            // Explicitly set style width/height to prevent scaling issues if canvas.width/height is smaller than container
-            canvas.style.width = canvas.width + 'px';
-            canvas.style.height = canvas.height + 'px';
-
-
+            canvas.width = TETRIS_COLS * TETRIS_BLOCK_SIZE; canvas.height = TETRIS_ROWS * TETRIS_BLOCK_SIZE;
+            canvas.style.marginLeft = 'auto'; canvas.style.marginRight = 'auto';
+            canvas.style.width = canvas.width + 'px'; // Set exact width for Tetris
+            canvas.style.height = canvas.height + 'px'; // Set exact height for Tetris
             gameState = {
-                board: Array(TETRIS_ROWS).fill(0).map(() => Array(TETRIS_COLS).fill(0)), // 0 for empty, values for colors
-                currentPiece: null,
-                nextPiece: null, // Future feature: next piece display
-                pieceX: 0,
-                pieceY: 0,
-                currentPieceColor: '', // Store the color for the current piece
-                dropCounter: 0,
-                dropInterval: 1, // seconds
-                level: 1,
-                linesCleared: 0,
-                score: 0, // Tetris specific score, but it feeds into global score
-                isGameOver: false,
-                lastMoveTime: 0 // To prevent rapid horizontal movement
+                board: Array(TETRIS_ROWS).fill(0).map(() => Array(TETRIS_COLS).fill(0)),
+                currentPiece: null, nextPiece: null, pieceX: 0, pieceY: 0, currentPieceColor: '',
+                dropCounter: 0, dropInterval: 1, level: 1, linesCleared: 0, score: 0, isGameOver: false, lastMoveTime: 0
             };
-
-            generateNewPiece();
-            // Start the drop process
-            gameState.dropCounter = 0;
-            gameState.lastMoveTime = performance.now(); // Initialize for input handling
-            score = 0; // Reset global score for Tetris game
-            updateScore();
+            generateNewPiece(); gameState.dropCounter = 0; gameState.lastMoveTime = performance.now(); score = 0; updateScore();
         }
 
         function generateNewPiece() {
             const pieceKeys = Object.keys(TETROMINOS);
             const randomKey = pieceKeys[Math.floor(Math.random() * pieceKeys.length)];
             const pieceData = TETROMINOS[randomKey];
-
-            gameState.currentPiece = JSON.parse(JSON.stringify(pieceData.shape)); // Deep copy the shape
+            gameState.currentPiece = JSON.parse(JSON.stringify(pieceData.shape)); // Deep copy
             gameState.currentPieceColor = pieceData.color;
             gameState.pieceX = Math.floor(TETRIS_COLS / 2) - Math.floor(gameState.currentPiece[0].length / 2);
-            gameState.pieceY = 0; // Start at the very top
+            gameState.pieceY = 0;
 
+            // Check for game over condition immediately after spawning a new piece
             if (checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX, gameState.pieceY)) {
-                // Game Over if new piece can't be placed
                 gameState.isGameOver = true;
-                gameOver(); // Trigger the global game over
+                gameOver();
             }
         }
 
-        // --- Tetris Collision Detection ---
         function checkTetrisCollision(board, piece, offsetX, offsetY) {
             for (let y = 0; y < piece.length; y++) {
                 for (let x = 0; x < piece[y].length; x++) {
-                    if (piece[y][x] !== 0) { // If it's a solid block of the piece
+                    if (piece[y][x] !== 0) { // If it's a block in the tetromino
                         const boardX = x + offsetX;
                         const boardY = y + offsetY;
 
+                        // Check for collision with walls or bottom
                         if (boardX < 0 || boardX >= TETRIS_COLS || boardY >= TETRIS_ROWS) {
-                            return true; // Collision with walls or floor
+                            return true;
                         }
-                        if (boardY < 0) { // Above board (starting position), no collision check with existing blocks
+                        // Skip collision check for cells above the board (negative Y)
+                        if (boardY < 0) {
                             continue;
                         }
+                        // Check for collision with existing blocks on the board
                         if (board[boardY] && board[boardY][boardX] !== 0) {
-                            return true; // Collision with another placed block
+                            return true;
                         }
                     }
                 }
@@ -1633,50 +1363,38 @@
             return false;
         }
 
-        // --- Tetris Piece Rotation ---
         function rotatePiece(piece, dir) {
-            // dir = 1 for clockwise, -1 for counter-clockwise (not fully implemented for -1)
-            // Clockwise rotation by transposing and reversing rows
-            const originalPiece = JSON.parse(JSON.stringify(piece)); // Keep original for rollback
+            // Create a new array for the rotated piece to avoid modifying the original during check
+            const originalPiece = JSON.parse(JSON.stringify(piece)); // Deep copy
             let newPiece = originalPiece.map((row, y) => row.map((val, x) => originalPiece[originalPiece.length - 1 - x][y]));
 
-            // If dir === -1 (counter-clockwise), rotate 3 times clockwise
-            if (dir === -1) {
+            if (dir === -1) { // Rotate counter-clockwise (3 times clockwise)
                 for (let i = 0; i < 3; i++) {
                     newPiece = newPiece.map((row, y) => row.map((val, x) => newPiece[newPiece.length - 1 - x][y]));
                 }
             }
 
-            // Basic Wall Kick / Collision Avoidance
-            const offsets = [
-                [0, 0],   // Try no offset
-                [-1, 0],  // Try moving left
-                [1, 0],   // Try moving right
-                [0, -1],  // Try moving down (for T, J, L, S, Z where vertical space is needed)
-                [-2, 0],  // For I-piece edge cases
-                [2, 0]    // For I-piece edge cases
-            ];
-
+            // Wall kick tests (simplified for basic functionality)
+            const offsets = [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0]]; // Common wall kick offsets
             for (const [ox, oy] of offsets) {
                 if (!checkTetrisCollision(gameState.board, newPiece, gameState.pieceX + ox, gameState.pieceY + oy)) {
                     gameState.currentPiece = newPiece;
                     gameState.pieceX += ox;
                     gameState.pieceY += oy;
-                    return true;
+                    return true; // Rotation successful
                 }
             }
-            return false; // Could not rotate
+            return false; // Rotation failed
         }
 
-        // --- Tetris Lock Piece ---
         function lockPiece() {
             for (let y = 0; y < gameState.currentPiece.length; y++) {
                 for (let x = 0; x < gameState.currentPiece[y].length; x++) {
-                    if (gameState.currentPiece[y][x] !== 0) { // If it's a solid block of the piece
-                        // Check if it's within bounds before assigning to prevent errors on game over condition
+                    if (gameState.currentPiece[y][x] !== 0) {
+                        // Ensure it's within bounds before placing
                         if (gameState.pieceY + y >= 0 && gameState.pieceY + y < TETRIS_ROWS &&
                             gameState.pieceX + x >= 0 && gameState.pieceX + x < TETRIS_COLS) {
-                            gameState.board[gameState.pieceY + y][gameState.pieceX + x] = gameState.currentPieceColor; // Store the color with the block
+                            gameState.board[gameState.pieceY + y][gameState.pieceX + x] = gameState.currentPieceColor;
                         }
                     }
                 }
@@ -1685,64 +1403,51 @@
             generateNewPiece();
         }
 
-        // --- Tetris Clear Lines (Robust Refactored Version) ---
         function clearLines() {
             let linesClearedThisTurn = 0;
-            const keptLines = []; // Array to hold lines that are not full
+            const keptLines = [];
 
-            // Iterate through the current board from top to bottom
             for (let y = 0; y < TETRIS_ROWS; y++) {
                 const isLineFull = gameState.board[y].every(block => block !== 0);
-
                 if (!isLineFull) {
-                    // If the line is NOT full, keep it
                     keptLines.push(gameState.board[y]);
                 } else {
-                    // If the line IS full, increment cleared count
                     linesClearedThisTurn++;
                 }
             }
 
-            // Create a brand new board
+            // Add empty rows to the top for cleared lines
             const newBoard = [];
-
-            // First, add new empty rows for each line that was cleared. These will appear at the top.
             for (let i = 0; i < linesClearedThisTurn; i++) {
                 newBoard.push(Array(TETRIS_COLS).fill(0));
             }
-
-            // Then, append all the lines that were kept (the non-full ones).
-            // This naturally shifts them to the bottom of the board.
+            // Add the lines that were not full
             keptLines.forEach(row => newBoard.push(row));
 
-            // Sanity check: Ensure the new board has the correct number of rows
+            // Adjust board size if necessary (shouldn't happen if logic is perfect, but as a safeguard)
             while (newBoard.length > TETRIS_ROWS) {
-                newBoard.shift(); // Remove excess rows from the top if somehow too many were added
+                newBoard.shift(); // Remove from top if somehow too many rows
             }
             while (newBoard.length < TETRIS_ROWS) {
-                newBoard.unshift(Array(TETRIS_COLS).fill(0)); // Add empty rows to top if somehow too few were added
+                newBoard.unshift(Array(TETRIS_COLS).fill(0)); // Add empty rows to top if too few
             }
             
-            // Replace the old game board with the newly constructed one
             gameState.board = newBoard;
 
             if (linesClearedThisTurn > 0) {
-                // Basic Tetris scoring (can be made more complex)
-                const scorePerLine = [0, 100, 300, 500, 800]; // 0, single, double, triple, tetris
+                const scorePerLine = [0, 100, 300, 500, 800]; // Score for 0, 1, 2, 3, 4 lines
                 score += scorePerLine[linesClearedThisTurn] * gameState.level;
                 gameState.linesCleared += linesClearedThisTurn;
                 updateScore();
-                // No sounds
             }
-            // Increase level after a certain number of lines cleared
-            if (gameState.linesCleared >= gameState.level * 10) { // Clear 10 lines per level increase
+
+            // Increase level after every 10 lines cleared (example)
+            if (gameState.linesCleared >= gameState.level * 10) {
                 gameState.level++;
                 gameState.dropInterval = Math.max(0.1, gameState.dropInterval * 0.85); // Make it drop faster
-                // console.log(`Level Up! New level: ${gameState.level}, Drop Interval: ${gameState.dropInterval.toFixed(2)}s`);
             }
         }
 
-        // --- Tetris Update Logic ---
         function updateTetris(deltaTime) {
             if (gameState.isGameOver) return;
 
@@ -1752,16 +1457,13 @@
                 dropPiece();
             }
 
-            // Input handling for Tetris - horizontal movement (continuous if key held)
             const currentTime = performance.now();
-            const moveDelay = 100; // milliseconds between horizontal moves for held keys
+            const moveDelay = 100; // Milliseconds between horizontal moves on hold
 
-            // Soft drop (hold down S or ArrowDown)
             if (keysPressed.has('arrowdown') || keysPressed.has('s')) {
-                // Accelerate drop speed while held
-                gameState.dropCounter += deltaTime * 5; 
+                gameState.dropCounter += deltaTime * 5; // Soft drop faster
             }
-
+            
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
                 if (currentTime - gameState.lastMoveTime > moveDelay) {
                     if (!checkTetrisCollision(gameState.board, gameState.currentPiece, gameState.pieceX - 1, gameState.pieceY)) {
@@ -1777,8 +1479,7 @@
                     }
                 }
             } else {
-                // Reset lastMoveTime when no horizontal key is pressed, allows immediate next move
-                gameState.lastMoveTime = 0;
+                gameState.lastMoveTime = 0; // Reset last move time when no horizontal key is pressed
             }
         }
 
@@ -1790,13 +1491,13 @@
             }
         }
 
-        // --- Tetris Drawing Logic ---
         function drawTetris() {
+            if (!ctx) return;
             // Draw the fixed blocks on the board
             for (let y = 0; y < TETRIS_ROWS; y++) {
                 for (let x = 0; x < TETRIS_COLS; x++) {
                     if (gameState.board[y][x] !== 0) {
-                        ctx.fillStyle = gameState.board[y][x]; // Use the stored color
+                        ctx.fillStyle = gameState.board[y][x];
                         ctx.fillRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
                         ctx.strokeStyle = '#000'; // Block borders
                         ctx.strokeRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
@@ -1810,19 +1511,15 @@
                 for (let y = 0; y < gameState.currentPiece.length; y++) {
                     for (let x = 0; x < gameState.currentPiece[y].length; x++) {
                         if (gameState.currentPiece[y][x] !== 0) {
-                            ctx.fillRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE,
-                                         (gameState.pieceY + y) * TETRIS_BLOCK_SIZE,
-                                         TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                            ctx.fillRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
                             ctx.strokeStyle = '#000'; // Block borders
-                            ctx.strokeRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE,
-                                           (gameState.pieceY + y) * TETRIS_BLOCK_SIZE,
-                                           TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                            ctx.strokeRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
                         }
                     }
                 }
             }
 
-            // Draw grid lines (optional, can be done with fillRect above for outlines too)
+            // Draw grid lines for visual clarity
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
             for (let i = 0; i <= TETRIS_COLS; i++) {
@@ -1838,28 +1535,298 @@
                 ctx.stroke();
             }
 
-            // Display level/lines cleared
+            // Display Level and Lines Cleared (optional, for Tetris specific)
             ctx.fillStyle = '#00ff41';
             ctx.font = '16px "Courier New", monospace';
             ctx.textAlign = 'left';
             ctx.fillText(`Level: ${gameState.level}`, 5, 20);
             ctx.fillText(`Lines: ${gameState.linesCleared}`, 5, 40);
-
-            // Game Over text is handled by the overlay now
         }
         // --- End Tetris Game ---
+
+        // --- Minesweeper Game ---
+        const MINE_CELL_SIZE = 30;
+
+        function initMinesweeper() {
+            gameState = {
+                rows: 16, // Default rows
+                cols: 16, // Default columns
+                mines: 40, // Default number of mines
+                board: [], // -1 for mine, 0-8 for surrounding mines
+                revealed: [], // true if cell is revealed
+                flagged: [], // true if cell is flagged
+                gameOver: false,
+                gameWon: false,
+                startTime: 0,
+                timer: 0,
+                minesRemaining: 0
+            };
+
+            // Set canvas size based on game board dimensions
+            canvas.width = gameState.cols * MINE_CELL_SIZE;
+            canvas.height = gameState.rows * MINE_CELL_SIZE;
+
+            // Ensure canvas is positioned correctly for Minesweeper, if its size is different
+            canvas.style.marginLeft = 'auto';
+            canvas.style.marginRight = 'auto';
+            canvas.style.width = canvas.width + 'px'; // Set exact width
+            canvas.style.height = canvas.height + 'px'; // Set exact height
+
+            // Initialize board, revealed, and flagged arrays
+            for (let r = 0; r < gameState.rows; r++) {
+                gameState.board.push(Array(gameState.cols).fill(0));
+                gameState.revealed.push(Array(gameState.cols).fill(false));
+                gameState.flagged.push(Array(gameState.cols).fill(false));
+            }
+
+            placeMines();
+            calculateMineCounts();
+
+            gameState.minesRemaining = gameState.mines;
+            document.getElementById('mineCountDisplay').textContent = `Mines: ${gameState.minesRemaining}`;
+            document.getElementById('timerDisplay').textContent = `Time: 0s`;
+
+            // Add event listeners specific to Minesweeper
+            canvas.addEventListener('click', handleMinesweeperClick);
+            canvas.addEventListener('contextmenu', handleMinesweeperRightClick); // For right-click to flag
+
+            gameState.startTime = Date.now(); // Start timer
+            gameState.timer = 0;
+        }
+
+        function placeMines() {
+            let minesPlaced = 0;
+            while (minesPlaced < gameState.mines) {
+                const r = Math.floor(Math.random() * gameState.rows);
+                const c = Math.floor(Math.random() * gameState.cols);
+                if (gameState.board[r][c] !== -1) { // If no mine is already there
+                    gameState.board[r][c] = -1; // Place a mine
+                    minesPlaced++;
+                }
+            }
+        }
+
+        function calculateMineCounts() {
+            for (let r = 0; r < gameState.rows; r++) {
+                for (let c = 0; c < gameState.cols; c++) {
+                    if (gameState.board[r][c] === -1) continue; // Skip if it's a mine
+
+                    let count = 0;
+                    // Check all 8 surrounding cells
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue; // Skip the cell itself
+
+                            const nr = r + dr;
+                            const nc = c + dc;
+
+                            // Check bounds and if the neighbor is a mine
+                            if (
+                                nr >= 0 && nr < gameState.rows &&
+                                nc >= 0 && nc < gameState.cols &&
+                                gameState.board[nr][nc] === -1
+                            ) {
+                                count++;
+                            }
+                        }
+                    }
+                    gameState.board[r][c] = count;
+                }
+            }
+        }
+
+        function handleMinesweeperClick(event) {
+            if (gameState.gameOver || gameState.gameWon || !canvas || document.getElementById('messageBox').style.display === 'block') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const c = Math.floor(x / MINE_CELL_SIZE);
+            const r = Math.floor(y / MINE_CELL_SIZE);
+
+            // Basic bounds check
+            if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols) {
+                return;
+            }
+
+            // Left click (reveal)
+            if (event.button === 0) { // 0 for left click
+                if (!gameState.revealed[r][c] && !gameState.flagged[r][c]) {
+                    revealCell(r, c);
+                }
+            }
+            checkMinesweeperWin();
+        }
+
+        function handleMinesweeperRightClick(event) {
+            event.preventDefault(); // Prevent context menu from appearing
+            if (gameState.gameOver || gameState.gameWon || !canvas || document.getElementById('messageBox').style.display === 'block') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const c = Math.floor(x / MINE_CELL_SIZE);
+            const r = Math.floor(y / MINE_CELL_SIZE);
+
+            // Basic bounds check
+            if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols) {
+                return;
+            }
+
+            // Right click (flag)
+            if (!gameState.revealed[r][c]) { // Can only flag unrevealed cells
+                gameState.flagged[r][c] = !gameState.flagged[r][c]; // Toggle flag
+                gameState.minesRemaining += (gameState.flagged[r][c] ? -1 : 1); // Update mine count
+                document.getElementById('mineCountDisplay').textContent = `Mines: ${gameState.minesRemaining}`;
+            }
+            checkMinesweeperWin();
+        }
+
+
+        // Recursive function to reveal cells
+        function revealCell(r, c) {
+            // Base cases for recursion: out of bounds, already revealed, or flagged
+            if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols ||
+                gameState.revealed[r][c] || gameState.flagged[r][c]) {
+                return;
+            }
+
+            gameState.revealed[r][c] = true; // Mark as revealed
+
+            if (gameState.board[r][c] === -1) {
+                // Hit a mine! Game Over
+                gameState.gameOver = true;
+                gameOver('lost'); // Call the general gameOver function
+                revealAllMines(); // Show all mines
+                return;
+            }
+
+            if (gameState.board[r][c] === 0) {
+                // If it's an empty cell (0 mines around), recursively reveal neighbors
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        revealCell(r + dr, c + dc);
+                    }
+                }
+            }
+            // If it's a numbered cell, just reveal it (recursion stops here)
+        }
+
+        function revealAllMines() {
+            for (let r = 0; r < gameState.rows; r++) {
+                for (let c = 0; c < gameState.cols; c++) {
+                    if (gameState.board[r][c] === -1) {
+                        gameState.revealed[r][c] = true; // Show all mines
+                        gameState.flagged[r][c] = false; // Unflag any incorrectly flagged mines for display
+                    }
+                }
+            }
+        }
+
+        function checkMinesweeperWin() {
+            let nonMineCellsRevealed = 0;
+            let totalNonMineCells = (gameState.rows * gameState.cols) - gameState.mines;
+
+            for (let r = 0; r < gameState.rows; r++) {
+                for (let c = 0; c < gameState.cols; c++) {
+                    if (gameState.board[r][c] !== -1 && gameState.revealed[r][c]) {
+                        nonMineCellsRevealed++;
+                    }
+                }
+            }
+
+            if (nonMineCellsRevealed === totalNonMineCells && !gameState.gameOver) {
+                gameState.gameWon = true;
+                gameOver('won'); // Call general gameOver function with 'won' status
+                revealAllMines(); // For aesthetics, show all mines when won (they should be flagged)
+            }
+        }
+
+        function updateMinesweeper(deltaTime) {
+            if (!gameState.gameOver && !gameState.gameWon) {
+                gameState.timer = Math.floor((Date.now() - gameState.startTime) / 1000);
+                document.getElementById('timerDisplay').textContent = `Time: ${gameState.timer}s`;
+            }
+        }
+
+        function drawMinesweeper() {
+            if (!ctx) return;
+            for (let r = 0; r < gameState.rows; r++) {
+                for (let c = 0; c < gameState.cols; c++) {
+                    const x = c * MINE_CELL_SIZE;
+                    const y = r * MINE_CELL_SIZE;
+
+                    // Draw cell background
+                    if (gameState.revealed[r][c]) {
+                        ctx.fillStyle = '#333'; // Darker for revealed cells
+                        ctx.fillRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                        if (gameState.board[r][c] === -1) {
+                            // Draw mine (black circle with white cross)
+                            ctx.fillStyle = '#ff0041'; // Red for mine
+                            ctx.beginPath();
+                            ctx.arc(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 2, MINE_CELL_SIZE / 3, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.strokeStyle = '#fff';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 4);
+                            ctx.lineTo(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE * 3 / 4);
+                            ctx.moveTo(x + MINE_CELL_SIZE / 4, y + MINE_CELL_SIZE / 2);
+                            ctx.lineTo(x + MINE_CELL_SIZE * 3 / 4, y + MINE_CELL_SIZE / 2);
+                            ctx.stroke();
+                        } else if (gameState.board[r][c] > 0) {
+                            // Draw number of adjacent mines
+                            const num = gameState.board[r][c];
+                            const colors = ['#0000ff', '#008000', '#ff0000', '#000080', '#800000', '#008080', '#000', '#808080']; // Colors for numbers 1-8
+                            ctx.fillStyle = colors[num - 1]; // Get color based on number
+                            ctx.font = `${MINE_CELL_SIZE * 0.7}px 'Courier New', monospace`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(num.toString(), x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 2);
+                        }
+                    } else {
+                        // Draw unrevealed cell
+                        ctx.fillStyle = '#666'; // Gray for unrevealed cells
+                        ctx.fillRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                        if (gameState.flagged[r][c]) {
+                            // Draw flag
+                            ctx.fillStyle = '#ffff00'; // Yellow flag
+                            ctx.beginPath();
+                            ctx.moveTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.8);
+                            ctx.lineTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.2);
+                            ctx.lineTo(x + MINE_CELL_SIZE * 0.8, y + MINE_CELL_SIZE * 0.3);
+                            ctx.lineTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.4);
+                            ctx.closePath();
+                            ctx.fill();
+                            ctx.strokeStyle = '#333';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.strokeStyle = '#000'; // Cell borders
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                }
+            }
+        }
+        // --- End Minesweeper Game ---
 
 
         // Initial setup on window load
         window.addEventListener('load', () => {
-            createStars(); // Populate stars on load
-            // Ensure initial display state is correct
-            document.getElementById('gameSelection').style.display = 'grid';
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('gameOverOverlay').classList.remove('active');
-            updateScore(); // Initialize score display
+            createStars();
+            document.getElementById('gameSelection').style.display = 'grid'; // Show game selection menu initially
+            document.getElementById('gameArea').style.display = 'none'; // Hide game area initially
+            document.getElementById('gameOverOverlay').classList.remove('active'); // Hide game over overlay
+            document.getElementById('messageBox').style.display = 'none'; // Hide message box
+            document.getElementById('mainHeader').style.display = 'block'; // Ensure header is shown on initial load
+            updateScore(); // Initial update for score display (will show Score: 0)
         });
-        window.addEventListener('resize', createStars); // Re-populate stars on resize for responsiveness
+
+        // Re-create stars on window resize to ensure full coverage
+        window.addEventListener('resize', createStars);
     </script>
 </body>
 </html>

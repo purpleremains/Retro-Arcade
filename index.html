@@ -242,6 +242,10 @@
             box-shadow: 0 0 30px rgba(255, 0, 65, 0.6);
             animation: fadeIn 0.5s ease-out;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .game-over-content h2 {
             font-size: 3rem;
             color: #ff0041;
@@ -275,11 +279,6 @@
         .game-over-buttons button:hover {
             transform: scale(1.1);
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
@@ -960,10 +959,21 @@
 
         // --- Pong Game ---
         function initPong() {
+            const initialBallSpeed = 280; // Adjusted ball speed to be slower
+            const randomXDir = Math.random() < 0.5 ? 1 : -1; // Random horizontal direction
+            const randomYDir = Math.random() < 0.5 ? 1 : -1; // Random vertical direction
+
             gameState = {
                 paddle1: {x: 10, y: canvas.height/2 - 50, width: 10, height: 100, dy: 0, speed: 200}, // speed in pixels/sec
-                paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: 150},
-                ball: {x: canvas.width/2, y: canvas.height/2, dx: 275, dy: 275, radius: 8} // speed in pixels/sec
+                paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: 350}, // AI speed unchanged
+                ball: {
+                    x: canvas.width/2,
+                    y: canvas.height/2,
+                    dx: initialBallSpeed * randomXDir, // Use consistent speed with random direction
+                    dy: initialBallSpeed * randomYDir, // Use consistent speed with random direction
+                    radius: 8
+                },
+                initialBallSpeed: initialBallSpeed // Store for easy reference during resets
             };
             score = 0; // Reset score for Pong game
             updateScore();
@@ -1028,19 +1038,43 @@
             } else if (gameState.ball.x > canvas.width) {
                  gameState.ball.x = canvas.width/2;
                  gameState.ball.y = canvas.height/2;
-                 gameState.ball.dx = (Math.random() > 0.5 ? 1 : -1) * 180; // Reset speed and direction
-                 gameState.ball.dy = (Math.random() > 0.5 ? 1 : -1) * 180;
+                 // Reset speed to initialBallSpeed, randomize direction
+                 gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                 gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
                  score += 1; // AI scores
                  updateScore();
                  // Removed playSound('score');
             }
 
-            // Simple AI for Paddle 2 (more responsive with deltaTime)
-            const paddleCenter = gameState.paddle2.y + gameState.paddle2.height/2;
-            if (gameState.ball.y < paddleCenter) {
-                gameState.paddle2.y = Math.max(0, gameState.paddle2.y - gameState.paddle2.speed * deltaTime);
-            } else {
-                gameState.paddle2.y = Math.min(canvas.height - gameState.paddle2.height, gameState.paddle2.y + gameState.paddle2.speed * deltaTime);
+            // Smarter AI for Paddle 2:
+            let predictedY = gameState.ball.y; // Start with current y
+
+            // Only predict if the ball is moving towards the AI's side
+            // and has passed the halfway point (optional, but prevents over-predicting on player's side)
+            if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
+                const timeToReachPaddleX = (gameState.paddle2.x - gameState.ball.x) / gameState.ball.dx;
+
+                if (timeToReachPaddleX > 0) { // Ensure the ball is moving towards the paddle
+                    predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX;
+
+                    // Clamp predictedY to prevent it from going wildly off-screen in prediction
+                    predictedY = Math.max(0, Math.min(canvas.height, predictedY));
+                }
+            }
+
+            // Introduce a slight "jitter" or "human error" to the target, scaled down
+            const humanError = (Math.random() - 0.5) * 15; // +/- 7.5 pixels
+            let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError;
+
+            // Clamp AI target to paddle limits
+            aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+
+            // Move paddle towards the target
+            const moveAmount = gameState.paddle2.speed * deltaTime;
+            if (gameState.paddle2.y < aiTargetY) {
+                gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount);
+            } else if (gameState.paddle2.y > aiTargetY) {
+                gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount);
             }
         }
 
@@ -1176,7 +1210,6 @@
         }
 
         function drawAsteroids() {
-            // Draw Ship
             ctx.save();
             ctx.translate(gameState.ship.x, gameState.ship.y);
             ctx.rotate(gameState.ship.angle);
@@ -1371,7 +1404,7 @@
                 // Removed playSound('bounce');
             } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
                 gameState.ball.x = canvas.width - gameState.ball.radius; // Reposition
-                gameState.ball.vx = -gameState.ball.vx; // FIX: Changed 'ball.vx' to 'gameState.ball.vx'
+                gameState.ball.vx = -gameState.ball.vx; // Fix: Reference to gameState.ball
                 // Removed playSound('bounce');
             }
         

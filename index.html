@@ -15,7 +15,7 @@
             background: linear-gradient(135deg, #0f0f23, #1a1a2e, #16213e);
             color: #00ff41;
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Prevent horizontal scroll for the body */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -155,9 +155,12 @@
             padding: 20px;
             margin-bottom: 20px;
             text-align: center;
-            width: 100%;
-            max-width: 650px;
+            width: 100%; /* Allows it to take full width */
+            /* max-width removed to allow full expansion */
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); 
+            display: flex; /* Use flexbox to center content */
+            flex-direction: column;
+            align-items: center;
         }
         .game-canvas {
             border: 2px solid #00ffff;
@@ -165,6 +168,10 @@
             background: #000;
             margin: 20px auto;
             display: block;
+            width: 100%; /* Take full width of its parent (game-area) */
+            height: auto; /* Maintain aspect ratio based on width */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            /* Removed min-width to allow full responsiveness */
         }
 
         .game-controls {
@@ -199,7 +206,8 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 400px;
+            min-width: 300px; /* Ensure a minimum width for info bar */
+            max-width: 600px; /* Limit to canvas width */
             margin-top: 10px;
             color: #00ffff;
             font-size: 1.1rem;
@@ -362,7 +370,8 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            /* min-width: 400px; */ /* Removed max-width to allow more space for wave counter */
+            min-width: 300px; /* Ensure a minimum width for info bar */
+            max-width: 600px; /* Limit to canvas width */
             margin-top: 10px;
             color: #00ff41;
             font-size: 1.1rem;
@@ -454,7 +463,7 @@
                 </label>
                 <button class="play-btn" onclick="startSelectedPongDifficulty()">Start Cyber Pong</button>
             </div>
-            <canvas id="gameCanvas" class="game-canvas" width="600" height="400"></canvas>
+            <canvas id="gameCanvas" class="game-canvas"></canvas>
             <div class="game-controls" id="gameControls"></div>
             <div class="action-buttons">
                 <button class="control-btn" id="restartGameButton" onclick="restartGame()" style="background: #ffaa00;">🔄 Restart Game</button>
@@ -473,7 +482,6 @@
         <div class="game-over-content">
             <h2>GAME OVER!</h2>
             <p id="finalScoreDisplay">Final Score: 0</p>
-            <!-- High score display removed -->
             <div class="game-over-buttons">
                 <button onclick="restartGameFromGameOver()">Play Again</button>
                 <button onclick="backToMenuFromGameOver()">Back to Menu</button>
@@ -501,13 +509,14 @@
         let animationFrameId = null; // Stores the requestAnimationFrame ID for the active game
         let canvas, ctx; // Main canvas and context
 
-        const originalCanvasWidth = 600;
-        const originalCanvasHeight = 400;
-
         let score = 0;
         let gameState = {}; // Holds game-specific variables for the current game
 
         let gameActive = false; // Global flag to control game loop
+
+        // Global variables for tracking previous canvas size for scaling active game elements
+        let previousCanvasWidth = 0;
+        let previousCanvasHeight = 0;
 
         // --- Keyboard Input Tracking (Centralized) ---
         const keysPressed = new Set(); // Tracks which keys are currently held down
@@ -607,6 +616,295 @@
             }
         }
 
+        // Global function to handle canvas resizing and drawing
+        function resizeCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            const containerElement = document.querySelector('.container');
+            const headerElement = document.getElementById('mainHeader');
+            const gameTitleElement = document.getElementById('gameTitle');
+            const scoreDisplayElement = document.getElementById('scoreDisplay');
+            const minesweeperInfoElement = document.getElementById('minesweeperInfo');
+            const galacticInvadersInfoElement = document.getElementById('galacticInvadersInfo');
+            const actionButtonsElement = document.querySelector('.action-buttons');
+            const pongDifficultySelectionElement = document.getElementById('pongDifficultySelection');
+            const messageBoxElement = document.getElementById('messageBox');
+
+
+            // Calculate available width and height for the canvas
+            // Account for total padding/margin around the canvas and other UI elements
+            let usedVerticalSpace = 0;
+            let usedHorizontalSpace = 0;
+
+            // Calculate horizontal space
+            // Assuming .container has 20px padding on each side
+            usedHorizontalSpace = containerElement.offsetLeft * 2 + 40; // 2 * body-margin + 2 * container-padding
+
+            // Calculate vertical space
+            // Header is outside gameArea
+            usedVerticalSpace += headerElement.offsetHeight + parseFloat(getComputedStyle(headerElement).marginBottom);
+            
+            // Elements inside gameArea but outside canvas
+            if (gameTitleElement.style.display !== 'none') {
+                usedVerticalSpace += gameTitleElement.offsetHeight + parseFloat(getComputedStyle(gameTitleElement).marginBottom);
+            }
+            if (scoreDisplayElement.style.display !== 'none') {
+                usedVerticalSpace += scoreDisplayElement.offsetHeight + parseFloat(getComputedStyle(scoreDisplayElement).marginBottom);
+            }
+            if (minesweeperInfoElement.style.display !== 'none') {
+                usedVerticalSpace += minesweeperInfoElement.offsetHeight + parseFloat(getComputedStyle(minesweeperInfoElement).marginBottom);
+            }
+            if (galacticInvadersInfoElement.style.display !== 'none') {
+                usedVerticalSpace += galacticInvadersInfoElement.offsetHeight + parseFloat(getComputedStyle(galacticInvadersInfoElement).marginBottom);
+            }
+            if (actionButtonsElement.style.display !== 'none') {
+                usedVerticalSpace += actionButtonsElement.offsetHeight + parseFloat(getComputedStyle(actionButtonsElement).marginTop);
+            }
+            if (pongDifficultySelectionElement.style.display !== 'none') {
+                usedVerticalSpace += pongDifficultySelectionElement.offsetHeight + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginTop) + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginBottom);
+            }
+            if (messageBoxElement.style.display !== 'none') { // Message box takes up its own space
+                 // If message box is showing, it's typically an overlay, so its height doesn't directly shrink available canvas space
+                 // unless it's designed as an inline element pushing content. Given its absolute position, its height doesn't affect.
+            }
+
+            // Also account for game-area padding (20px top/bottom) and canvas margins (20px top/bottom)
+            usedVerticalSpace += 40 + 40; // game-area padding + canvas margins
+
+            const availableWidth = window.innerWidth - usedHorizontalSpace;
+            const availableHeight = window.innerHeight - usedVerticalSpace;
+
+            // Define original fixed dimensions for aspect ratio calculations
+            const defaultGameOriginalWidth = 600;
+            const defaultGameOriginalHeight = 400;
+            const giOriginalWidth = 600;
+            const giOriginalHeight = 700;
+            const tetrisOriginalWidth = TETRIS_COLS * 20; // 200
+            const tetrisOriginalHeight = TETRIS_ROWS * 20; // 400
+            const minesweeperOriginalWidth = MINESWEEPER_DEFAULT_COLS * 30; // 480
+            const minesweeperOriginalHeight = MINESWEEPER_DEFAULT_ROWS * 30; // 480
+
+            let originalWidth, originalHeight;
+            switch (currentGame) {
+                case 'tetris':
+                    originalWidth = tetrisOriginalWidth;
+                    originalHeight = tetrisOriginalHeight;
+                    break;
+                case 'minesweeper':
+                    originalWidth = minesweeperOriginalWidth;
+                    originalHeight = minesweeperOriginalHeight;
+                    break;
+                case 'galacticInvaders':
+                    originalWidth = giOriginalWidth;
+                    originalHeight = giOriginalHeight;
+                    break;
+                default: // For Pong, Dino, Snake, Asteroids, Breakout
+                    originalWidth = defaultGameOriginalWidth;
+                    originalHeight = defaultGameOriginalHeight;
+                    break;
+            }
+
+            const aspectRatio = originalWidth / originalHeight;
+
+            let newCanvasWidth, newCanvasHeight;
+
+            const calculatedWidthBasedOnHeight = availableHeight * aspectRatio;
+            const calculatedHeightBasedOnWidth = availableWidth / aspectRatio;
+
+            if (calculatedWidthBasedOnHeight <= availableWidth) {
+                // If fitting by height means it also fits by width, prioritize maximizing height
+                newCanvasWidth = calculatedWidthBasedOnHeight;
+                newCanvasHeight = availableHeight;
+            } else {
+                // Otherwise, width is the limiting factor, fit by width
+                newCanvasWidth = availableWidth;
+                newCanvasHeight = calculatedHeightBasedOnWidth;
+            }
+
+            // Store old dimensions before applying new ones to canvas
+            const oldCanvasWidth = canvas.width;
+            const oldCanvasHeight = canvas.height;
+
+            // Apply new dimensions to canvas
+            canvas.width = newCanvasWidth;
+            canvas.height = newCanvasHeight;
+
+            // Update game-specific global sizes for drawing/logic based on new canvas size
+            if (currentGame === 'tetris') {
+                window.TETRIS_BLOCK_SIZE = Math.floor(canvas.width / TETRIS_COLS);
+            } else if (currentGame === 'minesweeper') {
+                window.MINE_CELL_SIZE = Math.floor(canvas.width / gameState.cols);
+            }
+
+            // Ensure `previousCanvasWidth/Height` are initialized on first run or updated on subsequent runs
+            if (previousCanvasWidth === 0 || previousCanvasHeight === 0 || isNaN(oldCanvasWidth) || isNaN(oldCanvasHeight) || oldCanvasWidth === 0 || oldCanvasHeight === 0) {
+                // First run or coming from menu or invalid old dimensions: just set previous to current
+                previousCanvasWidth = canvas.width;
+                previousCanvasHeight = canvas.height;
+            } else if (canvas.width !== oldCanvasWidth || canvas.height !== oldCanvasHeight) {
+                // Canvas dimensions actually changed, so scale existing game elements
+                const scaleX = canvas.width / oldCanvasWidth;
+                const scaleY = canvas.height / oldCanvasHeight;
+
+                if (gameActive && gameState) { // Only scale if a game is actively running
+                    switch (currentGame) {
+                        case 'dino':
+                            if (gameState.dino) {
+                                gameState.dino.x *= scaleX;
+                                gameState.dino.y *= scaleY;
+                                gameState.dino.width *= scaleX;
+                                gameState.dino.height *= scaleY;
+                                gameState.dino.gravity *= scaleY;
+                                gameState.dino.jumpStrength *= scaleY;
+                                GROUND_LINE_Y = canvas.height - (canvas.height * DINO_Y_OFFSET_RATIO);
+                            }
+                            gameState.obstacles.forEach(obstacle => {
+                                obstacle.x *= scaleX;
+                                obstacle.y *= scaleY;
+                                obstacle.width *= scaleX;
+                                obstacle.height *= scaleY;
+                            });
+                            gameState.gameSpeed *= scaleX;
+                            break;
+                        case 'snake':
+                            if (gameState.snake) {
+                                gameState.gridSize *= scaleX; // Scale grid size
+                                gameState.snake.forEach(segment => {
+                                    segment.x = Math.round(segment.x * scaleX); // Round to nearest grid cell
+                                    segment.y = Math.round(segment.y * scaleY);
+                                });
+                                gameState.food.x = Math.round(gameState.food.x * scaleX);
+                                gameState.food.y = Math.round(gameState.food.y * scaleY);
+                            }
+                            break;
+                        case 'pong':
+                            if (gameState.paddle1) {
+                                gameState.paddle1.x *= scaleX;
+                                gameState.paddle1.y *= scaleY;
+                                gameState.paddle1.width *= scaleX;
+                                gameState.paddle1.height *= scaleY;
+                                gameState.paddle1.speed *= scaleY;
+
+                                gameState.paddle2.x *= scaleX;
+                                gameState.paddle2.y *= scaleY;
+                                gameState.paddle2.width *= scaleX;
+                                gameState.paddle2.height *= scaleY;
+                                gameState.paddle2.speed *= scaleY;
+
+                                gameState.ball.x *= scaleX;
+                                gameState.ball.y *= scaleY;
+                                gameState.ball.dx *= scaleX;
+                                gameState.ball.dy *= scaleY;
+                                gameState.ball.radius *= Math.min(scaleX, scaleY); // Keep ball round
+                                gameState.initialBallSpeed *= scaleX;
+                            }
+                            break;
+                        case 'asteroids':
+                            if (gameState.ship) {
+                                gameState.ship.x *= scaleX;
+                                gameState.ship.y *= scaleY;
+                                gameState.ship.thrust *= Math.min(scaleX, scaleY); // Scale thrust proportionally
+                            }
+                            gameState.bullets.forEach(bullet => {
+                                bullet.x *= scaleX;
+                                bullet.y *= scaleY;
+                                bullet.vx *= scaleX;
+                                bullet.vy *= scaleY;
+                            });
+                            gameState.asteroids.forEach(asteroid => {
+                                asteroid.x *= scaleX;
+                                asteroid.y *= scaleY;
+                                asteroid.vx *= Math.min(scaleX, scaleY); // Scale asteroid speeds
+                                asteroid.vy *= Math.min(scaleX, scaleY);
+                                asteroid.radius *= Math.min(scaleX, scaleY);
+                            });
+                            break;
+                        case 'breakout':
+                            if (gameState.paddle) {
+                                gameState.paddle.x *= scaleX;
+                                gameState.paddle.y *= scaleY;
+                                gameState.paddle.width *= scaleX;
+                                gameState.paddle.height *= scaleY;
+                                gameState.paddle.speed *= scaleX;
+                            }
+                            if (gameState.ball) {
+                                gameState.ball.x *= scaleX;
+                                gameState.ball.y *= scaleY;
+                                gameState.ball.prevX *= scaleX;
+                                gameState.ball.prevY *= scaleY;
+                                gameState.ball.vx *= scaleX;
+                                gameState.ball.vy *= scaleY;
+                                gameState.ball.radius *= Math.min(scaleX, scaleY);
+                            }
+                            gameState.blocks.forEach(block => {
+                                block.x *= scaleX;
+                                block.y *= scaleY;
+                                block.width *= scaleX;
+                                block.height *= scaleY;
+                            });
+                            break;
+                        case 'galacticInvaders':
+                            if (gameState.player) {
+                                gameState.player.x *= scaleX;
+                                gameState.player.y *= scaleY;
+                                gameState.player.width *= scaleX;
+                                gameState.player.height *= scaleY;
+                            }
+                            gameState.playerBullets.forEach(bullet => {
+                                bullet.x *= scaleX;
+                                bullet.y *= scaleY;
+                                bullet.radius *= Math.min(scaleX, scaleY);
+                                bullet.vy *= scaleY; // Bullet speed in Y scales
+                            });
+                            gameState.enemies.forEach(enemy => {
+                                enemy.x *= scaleX;
+                                enemy.y *= scaleY;
+                                enemy.initialY *= scaleY; // Update initialY for oscillation
+                                enemy.width *= scaleX;
+                                enemy.height *= scaleY;
+                                enemy.diveTargetX *= scaleX;
+                            });
+                            gameState.enemyBullets.forEach(bullet => {
+                                bullet.x *= scaleX;
+                                bullet.y *= scaleY;
+                                bullet.radius *= Math.min(scaleX, scaleY);
+                                bullet.vy *= scaleY; // Bullet speed in Y scales
+                            });
+                            gameState.explosions.forEach(explosion => {
+                                explosion.x *= scaleX;
+                                explosion.y *= scaleY;
+                            });
+                            gameState.waveOscillationAmplitude *= scaleY;
+                            break;
+                    }
+                }
+                // Update previous dimensions AFTER scaling is applied
+                previousCanvasWidth = canvas.width;
+                previousCanvasHeight = canvas.height;
+            }
+            
+            // Force a redraw if game is active, regardless of whether scaling happened or not
+            // This is important because CSS changes (like the parent container resizing) might happen
+            // without the internal canvas.width/height attributes necessarily changing,
+            // but the actual drawn content needs to be refreshed to match the new display size.
+            if (gameActive && ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear
+                // Redraw based on the current game state and canvas size
+                switch(currentGame) {
+                    case 'dino': drawDino(); break;
+                    case 'snake': drawSnake(); break;
+                    case 'pong': drawPong(); break;
+                    case 'asteroids': drawAsteroids(); break;
+                    case 'breakout': drawBreakout(); break;
+                    case 'tetris': drawTetris(); break;
+                    case 'minesweeper': drawMinesweeper(); break;
+                    case 'galacticInvaders': drawGalacticInvaders(); break;
+                }
+            }
+        }
+
+
         function startGame(gameType, difficulty = null) {
             // Cancel any existing animation frame to prevent multiple loops
             if (animationFrameId) {
@@ -622,25 +920,37 @@
             document.getElementById('gameOverOverlay').classList.remove('active');
             document.getElementById('messageBox').style.display = 'none'; 
 
-            // Initialize canvas and context
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
+            currentGame = gameType; // Set current game
+            
+            // Re-initialize previous canvas dimensions before calling resizeCanvas for the first time
+            // to ensure a clean state for scaling calculation
+            previousCanvasWidth = 0;
+            previousCanvasHeight = 0;
+
+            // Set initial visibility states before calling resizeCanvas,
+            // so resizeCanvas can accurately calculate available space
+            document.getElementById('gameArea').style.display = 'flex'; // Show game area as flex container
+            document.getElementById('gameTitle').style.display = 'block'; // Assume title will be shown for calc
+            document.getElementById('scoreDisplay').style.display = 'block'; // Assume score will be shown for calc
+            document.getElementById('minesweeperInfo').style.display = 'none'; // Initially hidden
+            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Initially hidden
+            document.getElementById('restartGameButton').style.display = 'block'; // Assume buttons will be shown for calc
+            document.querySelector('.action-buttons').style.display = 'flex'; // Assume buttons will be shown for calc
+            canvas.style.display = 'block'; // Canvas will be visible
+            document.getElementById('pongDifficultySelection').style.display = 'none'; // Initially hidden
+            // Message box is positioned absolutely, so it doesn't affect flow layout for height calculation
+
+            resizeCanvas(); // Set initial canvas size based on game type and available space
+
             // Clear the canvas explicitly to remove any lingering drawings
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#000'; // Fill with black for a clean background
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            canvas.width = originalCanvasWidth;
-            canvas.height = originalCanvasHeight;
-            // Center the canvas by making it block and auto margin
-            canvas.style.marginLeft = 'auto';
-            canvas.style.marginRight = 'auto';
-            canvas.style.width = 'auto'; // Reset width to default for non-tetris games
-            canvas.style.height = 'auto'; // Reset height to default for non-tetris games
 
             // Hide game specific elements initially for all games
             document.getElementById('minesweeperInfo').style.display = 'none';
-            document.getElementById('scoreDisplay').style.display = 'none'; // Generic score display
+            document.getElementById('scoreDisplay').style.display = 'none'; // Generic score display, will be set by game type
             document.getElementById('galacticInvadersInfo').style.display = 'none'; // Galactic Invaders info display
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
@@ -648,8 +958,6 @@
             // Always hide game title until the game is actually started (not just showing instructions)
             document.getElementById('gameTitle').style.display = 'none'; 
             
-            currentGame = gameType; // Set current game
-
             // Clear game state and input keys for a fresh start
             score = 0; // Reset score for the game that's about to start
             updateScore(); // This will update the scoreDisplay element
@@ -664,13 +972,13 @@
             // Game-specific initializations
             if (gameType === 'pong' && difficulty === null) {
                 // For Pong, show difficulty selection first, and the gameArea frame
-                document.getElementById('gameArea').style.display = 'block'; // Show game area for Pong difficulty
+                document.getElementById('gameArea').style.display = 'flex'; // Show game area for Pong difficulty
                 document.getElementById('pongDifficultySelection').style.display = 'flex';
                 // gameTitle remains hidden here. It will be shown in startSelectedPongDifficulty.
                 // No need to initialize Pong game state yet, it will be done after difficulty selection
             } else {
                 // For other games, show the gameArea as container for messageBox
-                document.getElementById('gameArea').style.display = 'block'; 
+                document.getElementById('gameArea').style.display = 'flex'; 
                 // gameTitle is explicitly hidden above. This will be shown when startGameFromOverlay is called.
                 const controlsText = getControlsText(gameType);
                 // Pass true for isStartOverlay to show 'Start Game' button
@@ -734,7 +1042,7 @@
             }
             
             document.getElementById('gameTitle').style.display = 'block'; // Show game title now
-            document.getElementById('gameArea').style.display = 'block'; // Game Area is already active and its children will be shown
+            document.getElementById('gameArea').style.display = 'flex'; // Game Area is already active and its children will be shown
             canvas.style.display = 'block'; // Show canvas now that instructions are hidden
             document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
             document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
@@ -749,7 +1057,7 @@
             gameActive = true; // Set unified game active flag
             
             // Now, show the actual game elements within the gameArea
-            document.getElementById('gameArea').style.display = 'block'; // Game area container should already be visible
+            document.getElementById('gameArea').style.display = 'flex'; // Game area container should already be visible
             document.getElementById('gameTitle').style.display = 'block'; // Show game title now
             document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
             canvas.style.display = 'block'; 
@@ -784,7 +1092,7 @@
             document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide difficulty selection
             document.getElementById('gameTitle').style.display = 'block'; // Show game title for Pong
             document.getElementById('gameTitle').textContent = getGameTitle('pong'); // Update title
-            // GameArea is already 'block' from startGame for Pong. Now show its contents.
+            // GameArea is already 'flex' from startGame for Pong. Now show its contents.
             document.getElementById('scoreDisplay').style.display = 'block'; // Show score display
             document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
             canvas.style.display = 'block'; // Show canvas now that difficulty is selected
@@ -806,7 +1114,6 @@
             const finalScoreDisplay = document.getElementById('finalScoreDisplay');
             const gameOverH2 = document.getElementById('gameOverOverlay').querySelector('h2');
             const gameOverContent = document.getElementById('gameOverOverlay').querySelector('.game-over-content');
-            // High score display element removed from HTML
 
             if (currentGame === 'minesweeper') {
                 if (status === 'won') {
@@ -863,7 +1170,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Hide game-specific UI elements
+            // Hide game-specific UI elements (they will be shown by startGame later)
             canvas.style.display = 'none';
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
@@ -871,10 +1178,14 @@
             document.getElementById('minesweeperInfo').style.display = 'none'; 
             document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
             document.getElementById('gameTitle').style.display = 'none'; // Explicitly hide game title on restart
-            
-            // Ensure gameArea is visible as container for the message/difficulty
-            document.getElementById('gameArea').style.display = 'block'; 
+            document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide pong difficulty if it was visible
 
+            // Ensure gameArea is visible as container for the message/difficulty
+            document.getElementById('gameArea').style.display = 'flex'; // Changed to flex
+
+            // Re-initialize previous canvas dimensions for accurate scaling upon restart
+            previousCanvasWidth = 0;
+            previousCanvasHeight = 0;
 
             if (currentGame === 'pong') {
                 // For Pong, go back to difficulty selection, which correctly uses gameArea styling
@@ -890,7 +1201,7 @@
         function restartGameFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
             // Call startGame for the current game, which handles all necessary resets and setup.
-            startGame(currentGame);
+            restartGame(); // Use restartGame to ensure full re-init and setup for controls/canvas
         }
 
 
@@ -928,6 +1239,10 @@
             score = 0; // Reset general score for the menu
             updateScore();
             keysPressed.clear(); // Clear any pressed keys
+
+            // Reset previous canvas dimensions when returning to menu to prevent scaling issues on next game start
+            previousCanvasWidth = 0;
+            previousCanvasHeight = 0;
 
             document.getElementById('minesweeperInfo').style.display = 'none'; // Hide Minesweeper info
             document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
@@ -1014,24 +1329,33 @@
 
 
         // --- Dino Game ---
-        const DINO_Y_OFFSET = 5;
-        const DINO_HEIGHT_DEFAULT = 50;
-        const DINO_WIDTH_DEFAULT = 30;
-        const GROUND_LINE_Y = originalCanvasHeight - DINO_Y_OFFSET;
+        // GROUND_LINE_Y will now be relative to dynamic canvas.height
+        let GROUND_LINE_Y;
+        const DINO_Y_OFFSET_RATIO = 0.0125; // 5 / 400 = 0.0125 (original offset / original canvas height)
+        const DINO_HEIGHT_RATIO = 0.125; // 50 / 400 = 0.125
+        const DINO_WIDTH_RATIO = 0.05; // 30 / 600 = 0.05
 
         function initDino() {
+            // Update constants based on current canvas size
+            const currentDinoHeight = canvas.height * DINO_HEIGHT_RATIO;
+            const currentDinoWidth = canvas.width * DINO_WIDTH_RATIO;
+            GROUND_LINE_Y = canvas.height - (canvas.height * DINO_Y_OFFSET_RATIO);
+
             gameState.dino = {
-                x: 50, y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT, width: DINO_WIDTH_DEFAULT, height: DINO_HEIGHT_DEFAULT,
+                x: 50 * (canvas.width / 600), // Scale initial x
+                y: GROUND_LINE_Y - currentDinoHeight, // Use scaled height
+                width: currentDinoWidth,
+                height: currentDinoHeight,
                 dy: 0, 
-                gravity: 2400, // Slightly increased gravity for quicker descent
-                jumpStrength: -600, // Increased jump strength for higher jump
+                gravity: 2400 * (canvas.height / 400), // Scale gravity with height
+                jumpStrength: -600 * (canvas.height / 400), // Scale jump strength with height
                 isJumping: false,
                 draw() {
                     if (!ctx) return;
                     ctx.fillStyle = '#00ff41'; ctx.fillRect(this.x, this.y, this.width, this.height);
                     ctx.beginPath(); ctx.arc(this.x + this.width, this.y + this.height * 0.2, this.width * 0.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(this.x + this.width + 5, this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(this.x + this.width + 5 * (canvas.width / 600), this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2 * (canvas.width / 600), 0, Math.PI * 2); ctx.fill();
                 },
                 jump() { if (!this.isJumping) { this.dy = this.jumpStrength; this.isJumping = true; } },
                 update(deltaTime) {
@@ -1041,13 +1365,18 @@
                 }
             };
             gameState.obstacles = [];
-            gameState.gameSpeed = 500; // Initial speed
+            gameState.gameSpeed = 500 * (canvas.width / 600); // Initial speed, scaled
             gameState.obstacleSpawnTimer = 0; // In seconds
             gameState.obstacleSpawnInterval = 0.7; // Initial interval
         }
 
         function createDinoObstacle() {
-            const obstacleTypes = [{ width: 20, height: 40, color: '#ff0041' }, { width: 30, height: 60, color: '#ff0041' }, { width: 45, height: 25, color: '#ff0041', isFlying: true, yOffset: 100 }];
+            const scaleFactor = canvas.width / 600;
+            const obstacleTypes = [
+                { width: 20 * scaleFactor, height: 40 * scaleFactor, color: '#ff0041' },
+                { width: 30 * scaleFactor, height: 60 * scaleFactor, color: '#ff0041' },
+                { width: 45 * scaleFactor, height: 25 * scaleFactor, color: '#ff0041', isFlying: true, yOffset: 100 * scaleFactor }
+            ];
             const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
             gameState.obstacles.push({
                 x: canvas.width, y: type.isFlying ? (GROUND_LINE_Y - type.height - type.yOffset) : (GROUND_LINE_Y - type.height),
@@ -1074,7 +1403,7 @@
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
                 createDinoObstacle();
                 gameState.obstacleSpawnTimer = 0;
-                gameState.gameSpeed += 5 * deltaTime; // Increase speed over time (now 5 pixels/second per second)
+                gameState.gameSpeed += 5 * deltaTime * (canvas.width / 600); // Increase speed over time, scaled
                 // Decrease interval over time, clamp at 0.3 seconds
                 gameState.obstacleSpawnInterval = Math.max(0.3, gameState.obstacleSpawnInterval - (0.02 * deltaTime)); 
             }
@@ -1084,7 +1413,7 @@
 
         function drawDino() {
             if (!ctx) return;
-            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, GROUND_LINE_Y); ctx.lineTo(canvas.width, GROUND_LINE_Y); ctx.stroke();
+            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 5 * (canvas.width / 600); ctx.beginPath(); ctx.moveTo(0, GROUND_LINE_Y); ctx.lineTo(canvas.width, GROUND_LINE_Y); ctx.stroke();
             gameState.dino.draw();
             for (let obstacle of gameState.obstacles) { obstacle.draw(); }
         }
@@ -1092,10 +1421,16 @@
 
 
         // --- Snake Game ---
+        const SNAKE_INITIAL_GRID_SIZE = 20; // Original grid size for scaling
+
         function initSnake() {
+            const scaleFactor = canvas.width / 600;
+            const currentGridSize = SNAKE_INITIAL_GRID_SIZE * scaleFactor;
             gameState = {
                 snake: [{x: 10, y: 10}], food: {x: 15, y: 15}, direction: {x: 1, y: 0}, nextDirection: {x: 1, y: 0},
-                gridSize: 20, speed: 10, timeSinceLastMove: 0
+                gridSize: currentGridSize,
+                speed: 10, // Speed in terms of grid cells per second
+                timeSinceLastMove: 0
             };
             spawnFood();
         }
@@ -1107,7 +1442,8 @@
                 gameState.timeSinceLastMove -= moveInterval;
                 gameState.direction = gameState.nextDirection;
                 const head = {x: gameState.snake[0].x + gameState.direction.x, y: gameState.snake[0].y + gameState.direction.y};
-                const maxGridX = canvas.width / gameState.gridSize; const maxGridY = canvas.height / gameState.gridSize;
+                const maxGridX = Math.floor(canvas.width / gameState.gridSize);
+                const maxGridY = Math.floor(canvas.height / gameState.gridSize);
                 if (head.x < 0 || head.x >= maxGridX || head.y < 0 || head.y >= maxGridY) { gameOver(); return; }
                 for (let i = 1; i < gameState.snake.length; i++) {
                     const segment = gameState.snake[i]; if (head.x === segment.x && head.y === segment.y) { gameOver(); return; }
@@ -1120,7 +1456,8 @@
         }
 
         function spawnFood() {
-            const maxGridX = canvas.width / gameState.gridSize; const maxGridY = canvas.height / gameState.gridSize;
+            const maxGridX = Math.floor(canvas.width / gameState.gridSize);
+            const maxGridY = Math.floor(canvas.height / gameState.gridSize);
             do {
                 gameState.food = {x: Math.floor(Math.random() * maxGridX), y: Math.floor(Math.random() * maxGridY)};
             } while (gameState.snake.some(segment => segment.x === gameState.food.x && segment.y === gameState.food.y));
@@ -1129,9 +1466,9 @@
         function drawSnake() {
             if (!ctx) return;
             ctx.fillStyle = '#00ff41';
-            for (let segment of gameState.snake) { ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize, gameState.gridSize - 2, gameState.gridSize - 2); }
+            for (let segment of gameState.snake) { ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / 600), gameState.gridSize - 2 * (canvas.width / 600)); }
             ctx.fillStyle = '#ff0041';
-            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize, gameState.gridSize - 2, gameState.gridSize - 2);
+            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / 600), gameState.gridSize - 2 * (canvas.width / 600));
         }
 
         function changeDirection(dir) {
@@ -1145,30 +1482,78 @@
         // --- Pong Game ---
         function initPong(difficulty) {
             gameState.difficulty = difficulty;
-            const initialBallSpeed = 280; const randomXDir = Math.random() < 0.5 ? 1 : -1; const randomYDir = Math.random() < 0.5 ? 1 : -1;
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 400;
+
+            let initialBallSpeed = 280 * scaleFactorX; // Default for easy, scaled by width
+            if (difficulty === 'hard') {
+                initialBallSpeed = 415 * scaleFactorX; // Adjusted speed for hard difficulty, scaled by width
+            }
+            
+            const randomXDir = Math.random() < 0.5 ? 1 : -1;
+            const randomYDir = Math.random() < 0.5 ? 1 : -1;
             let aiPaddleSpeed;
-            if (difficulty === 'easy') { aiPaddleSpeed = 220; } else { aiPaddleSpeed = 350; }
+            if (difficulty === 'easy') { aiPaddleSpeed = 220 * scaleFactorY; } else { aiPaddleSpeed = 350 * scaleFactorY; } // Scaled by height
+            
             gameState = {
-                ...gameState, paddle1: {x: 10, y: canvas.height/2 - 50, width: 10, height: 100, dy: 0, speed: 200},
-                paddle2: {x: canvas.width - 20, y: canvas.height/2 - 50, width: 10, height: 100, speed: aiPaddleSpeed},
-                ball: { x: canvas.width/2, y: canvas.height/2, dx: initialBallSpeed * randomXDir, dy: initialBallSpeed * randomYDir, radius: 8 },
-                initialBallSpeed: initialBallSpeed
+                ...gameState,
+                paddle1: {
+                    x: 10 * scaleFactorX, // Scaled
+                    y: canvas.height/2 - (50 * scaleFactorY), // Scaled
+                    width: 10 * scaleFactorX, // Scaled
+                    height: 100 * scaleFactorY, // Scaled
+                    dy: 0,
+                    speed: 200 * scaleFactorY // Scaled
+                },
+                paddle2: {
+                    x: canvas.width - (20 * scaleFactorX), // Scaled
+                    y: canvas.height/2 - (50 * scaleFactorY), // Scaled
+                    width: 10 * scaleFactorX, // Scaled
+                    height: 100 * scaleFactorY, // Scaled
+                    speed: aiPaddleSpeed
+                },
+                ball: {
+                    x: canvas.width/2,
+                    y: canvas.height/2,
+                    dx: initialBallSpeed * randomXDir,
+                    dy: initialBallSpeed * randomYDir,
+                    radius: 8 * Math.min(scaleFactorX, scaleFactorY) // Scaled
+                },
+                initialBallSpeed: initialBallSpeed 
             };
             score = 0; updateScore();
         }
 
         function updatePong(deltaTime) {
+            const scaleFactorY = canvas.height / 400;
+
             if (keysPressed.has('arrowup') || keysPressed.has('w')) { gameState.paddle1.y = Math.max(0, gameState.paddle1.y - gameState.paddle1.speed * deltaTime); }
             if (keysPressed.has('arrowdown') || keysPressed.has('s')) { gameState.paddle1.y = Math.min(canvas.height - gameState.paddle1.height, gameState.paddle1.y + gameState.paddle1.speed * deltaTime); }
             gameState.ball.x += gameState.ball.dx * deltaTime; gameState.ball.y += gameState.ball.dy * deltaTime;
             if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
             else if (gameState.ball.y + gameState.ball.radius >= canvas.height) { gameState.ball.y = canvas.height - gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
-            if (gameState.ball.dx < 0 && gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width && gameState.ball.y >= gameState.paddle1.y && gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height) {
-                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius; gameState.ball.dx = -gameState.ball.dx; gameState.ball.dy += (Math.random() * 50 - 25);
+            
+            const ballHitPaddle1 = gameState.ball.dx < 0 && 
+                                   gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width && 
+                                   gameState.ball.y >= gameState.paddle1.y && 
+                                   gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height;
+            
+            const ballHitPaddle2 = gameState.ball.dx > 0 && 
+                                   gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x && 
+                                   gameState.ball.y >= gameState.paddle2.y && 
+                                   gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height;
+
+            if (ballHitPaddle1) {
+                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius; 
+                gameState.ball.dx = -gameState.ball.dx; 
+                gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY; // Scaled deflection
             }
-            else if (gameState.ball.dx > 0 && gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x && gameState.ball.y >= gameState.paddle2.y && gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height) {
-                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius; gameState.ball.dx = -gameState.ball.dx; gameState.ball.dy += (Math.random() * 50 - 25);
+            else if (ballHitPaddle2) {
+                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius; 
+                gameState.ball.dx = -gameState.ball.dx; 
+                gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY; // Scaled deflection
             }
+
             if (gameState.ball.x < 0) { gameOver(); return; } else if (gameState.ball.x > canvas.width) {
                  gameState.ball.x = canvas.width/2; gameState.ball.y = canvas.height/2;
                  gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed; gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
@@ -1180,12 +1565,15 @@
                 if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
                 else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
             } else {
+                const scaleFactorX = canvas.width / 600;
+                const scaleFactorY = canvas.height / 400;
+
                 let predictedY = gameState.ball.y;
                 if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
                     const timeToReachPaddleX = (gameState.paddle2.x - gameState.ball.x) / gameState.ball.dx;
                     if (timeToReachPaddleX > 0) { predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX; predictedY = Math.max(0, Math.min(canvas.height, predictedY)); }
                 }
-                const humanError = (Math.random() - 0.5) * 15;
+                const humanError = (Math.random() - 0.5) * 15 * scaleFactorY; // Scaled human error
                 let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError; aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
                 const moveAmount = gameState.paddle2.speed * deltaTime;
                 if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
@@ -1195,10 +1583,37 @@
 
         function drawPong() {
             if (!ctx) return;
-            ctx.fillStyle = '#00ff41'; ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
-            ctx.fillStyle = '#ff0041'; ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
-            ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#00ff41'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke(); ctx.setLineDash([]);
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 400;
+            
+            // Draw Paddle 1 (left paddle, original rectangular shape)
+            ctx.fillStyle = '#00ff41';
+            ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
+            ctx.strokeStyle = '#00cc00'; // Add a subtle outline
+            ctx.lineWidth = 1 * Math.min(scaleFactorX, scaleFactorY);
+            ctx.strokeRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
+
+            // Draw Paddle 2 (right paddle, original rectangular shape)
+            ctx.fillStyle = '#ff0041';
+            ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
+            ctx.strokeStyle = '#cc0033'; // Add a subtle outline
+            ctx.lineWidth = 1 * Math.min(scaleFactorX, scaleFactorY);
+            ctx.strokeRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
+
+            // Draw ball
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw center line
+            ctx.strokeStyle = '#00ff41';
+            ctx.setLineDash([5 * scaleFactorX, 5 * scaleFactorX]); // Scaled dash
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
         }
         // --- End Pong Game ---
 
@@ -1207,8 +1622,9 @@
         let lastShotTimeAsteroids = 0;
 
         function initAsteroids() {
+            const scaleFactor = canvas.width / 600;
             gameState = {
-                ship: {x: canvas.width/2, y: canvas.height/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150, rotationSpeed: 3},
+                ship: {x: canvas.width/2, y: canvas.height/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150 * scaleFactor, rotationSpeed: 3},
                 bullets: [], asteroids: []
             };
             for (let i = 0; i < 5; i++) { spawnAsteroid(3); }
@@ -1244,9 +1660,10 @@
                     }
                 }
             }
+            const shipDetectionRadius = 10 * (canvas.width / 600); // Scale ship detection radius
             for (let asteroid of gameState.asteroids) {
                 const dx = gameState.ship.x - asteroid.x; const dy = gameState.ship.y - asteroid.y;
-                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + 10) { gameOver(); return; }
+                if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + shipDetectionRadius) { gameOver(); return; }
             }
             if (gameState.asteroids.length === 0) {
                 const levelMultiplier = Math.floor(score / 500) + 1;
@@ -1256,29 +1673,33 @@
 
         function drawAsteroids() {
             if (!ctx) return;
+            const scaleFactor = canvas.width / 600;
             ctx.save(); ctx.translate(gameState.ship.x, gameState.ship.y); ctx.rotate(gameState.ship.angle);
-            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-10, -10); ctx.lineTo(-5, 0); ctx.lineTo(-10, 10); ctx.closePath(); ctx.stroke(); ctx.restore();
-            ctx.fillStyle = '#00ffff'; gameState.bullets.forEach(bullet => { ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 2, 0, Math.PI * 2); ctx.fill(); });
-            ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2; gameState.asteroids.forEach(asteroid => { ctx.beginPath(); ctx.arc(asteroid.x, asteroid.y, asteroid.radius, 0, Math.PI * 2); ctx.stroke(); });
+            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 2 * scaleFactor; ctx.beginPath(); ctx.moveTo(15 * scaleFactor, 0); ctx.lineTo(-10 * scaleFactor, -10 * scaleFactor); ctx.lineTo(-5 * scaleFactor, 0); ctx.lineTo(-10 * scaleFactor, 10 * scaleFactor); ctx.closePath(); ctx.stroke(); ctx.restore();
+            ctx.fillStyle = '#00ffff'; gameState.bullets.forEach(bullet => { ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 2 * scaleFactor, 0, Math.PI * 2); ctx.fill(); });
+            ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2 * scaleFactor; gameState.asteroids.forEach(asteroid => { ctx.beginPath(); ctx.arc(asteroid.x, asteroid.y, asteroid.radius, 0, Math.PI * 2); ctx.stroke(); });
         }
 
         function shootBulletAsteroids() {
             const currentTime = performance.now() / 1000;
             if (currentTime - lastShotTimeAsteroids > ASTEROIDS_SHOOT_COOLDOWN) {
+                const scaleFactor = canvas.width / 600;
                 gameState.bullets.push({
-                    x: gameState.ship.x + Math.cos(gameState.ship.angle) * 15, y: gameState.ship.y + Math.sin(gameState.ship.angle) * 15,
-                    vx: Math.cos(gameState.ship.angle) * 300 + gameState.ship.vx, vy: Math.sin(gameState.ship.angle) * 300 + gameState.ship.vy
+                    x: gameState.ship.x + Math.cos(gameState.ship.angle) * 15 * scaleFactor, y: gameState.ship.y + Math.sin(gameState.ship.angle) * 15 * scaleFactor,
+                    vx: Math.cos(gameState.ship.angle) * 300 * scaleFactor + gameState.ship.vx, vy: Math.sin(gameState.ship.angle) * 300 * scaleFactor + gameState.ship.vy
                 });
                 lastShotTimeAsteroids = currentTime;
             }
         }
 
         function spawnAsteroid(size, x = null, y = null) {
+            const scaleFactor = canvas.width / 600;
             const radiusMap = { 3: 40, 2: 25, 1: 15 }; const speedMap = { 3: 60, 2: 90, 1: 120 };
-            const asteroidRadius = radiusMap[size]; const asteroidSpeed = speedMap[size];
+            const asteroidRadius = radiusMap[size] * scaleFactor;
+            const asteroidSpeed = speedMap[size] * scaleFactor;
             let asteroidX = x !== null ? x : Math.random() * canvas.width; let asteroidY = y !== null ? y : Math.random() * canvas.height;
             if (size === 3 && x === null && gameState.ship) {
-                while (Math.sqrt(Math.pow(asteroidX - gameState.ship.x, 2) + Math.pow(asteroidY - gameState.ship.y, 2)) < 150) {
+                while (Math.sqrt(Math.pow(asteroidX - gameState.ship.x, 2) + Math.pow(asteroidY - gameState.ship.y, 2)) < 150 * scaleFactor) { // Scaled initial distance
                     asteroidX = Math.random() * canvas.width; asteroidY = Math.random() * canvas.height;
                 }
             }
@@ -1289,17 +1710,42 @@
 
         // --- Breakout Game ---
         function initBreakout() {
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 400;
+
             gameState = {
-                paddle: {x: canvas.width/2 - 50, y: canvas.height - 20, width: 100, height: 10, speed: 250},
-                ball: {x: canvas.width/2, y: canvas.height - 30, vx: 250, vy: -250, radius: 8, prevX: 0, prevY: 0},
+                paddle: {
+                    x: canvas.width/2 - (50 * scaleFactorX),
+                    y: canvas.height - (20 * scaleFactorY),
+                    width: 100 * scaleFactorX,
+                    height: 10 * scaleFactorY,
+                    speed: 250 * scaleFactorX
+                },
+                ball: {
+                    x: canvas.width/2,
+                    y: canvas.height - (30 * scaleFactorY),
+                    vx: 250 * scaleFactorX,
+                    vy: -250 * scaleFactorY,
+                    radius: 8 * Math.min(scaleFactorX, scaleFactorY),
+                    prevX: 0, prevY: 0
+                },
                 blocks: [], blocksRemaining: 0
             };
-            const blockWidth = 55; const blockHeight = 15; const blockPadding = 5; const blockOffsetTop = 50; const blocksPerRow = 10;
+            const blockWidth = 55 * scaleFactorX;
+            const blockHeight = 15 * scaleFactorY;
+            const blockPadding = 5 * scaleFactorX;
+            const blockOffsetTop = 50 * scaleFactorY;
+            const blocksPerRow = 10;
             const blockOffsetLeft = (canvas.width - (blocksPerRow * blockWidth + (blocksPerRow - 1) * blockPadding)) / 2;
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < blocksPerRow; col++) {
-                    gameState.blocks.push({ x: col * (blockWidth + blockPadding) + blockOffsetLeft, y: row * (blockHeight + blockPadding) + blockOffsetTop,
-                        width: blockWidth, height: blockHeight, color: `hsl(${row * 50}, 100%, 50%)`, hits: 5 - row
+                    gameState.blocks.push({
+                        x: col * (blockWidth + blockPadding) + blockOffsetLeft,
+                        y: row * (blockHeight + blockPadding) + blockOffsetTop,
+                        width: blockWidth,
+                        height: blockHeight,
+                        color: `hsl(${row * 50}, 100%, 50%)`,
+                        hits: 5 - row
                     });
                     gameState.blocksRemaining++;
                 }
@@ -1328,6 +1774,8 @@
         }
         
         function updateBreakout(deltaTime) {
+            const scaleFactorX = canvas.width / 600;
+
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) { gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime); }
             if (keysPressed.has('arrowright') || keysPressed.has('d')) { gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime); }
             gameState.ball.prevX = gameState.ball.x; gameState.ball.prevY = gameState.ball.y;
@@ -1339,7 +1787,7 @@
             if (gameState.ball.vy > 0 && gameState.ball.x + gameState.ball.radius > gameState.paddle.x && gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width && gameState.ball.y + gameState.ball.radius >= gameState.paddle.y && gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
                 gameState.ball.y = gameState.paddle.y - gameState.ball.radius; 
                 gameState.ball.vy = -gameState.ball.vy;
-                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2;
+                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2 * scaleFactorX; // Scaled deflection
             }
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
                 const block = gameState.blocks[i];
@@ -1368,7 +1816,9 @@
 
 
         // --- Tetris Game ---
-        const TETRIS_COLS = 10; const TETRIS_ROWS = 20; const TETRIS_BLOCK_SIZE = 20;
+        const TETRIS_COLS = 10;
+        const TETRIS_ROWS = 20;
+        // TETRIS_BLOCK_SIZE will be dynamically calculated in resizeCanvas
 
         const TETROMINOS = {
             'I': { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#00ffff' },
@@ -1381,10 +1831,9 @@
         };
 
         function initTetris() {
-            canvas.width = TETRIS_COLS * TETRIS_BLOCK_SIZE; canvas.height = TETRIS_ROWS * TETRIS_BLOCK_SIZE;
-            canvas.style.marginLeft = 'auto'; canvas.style.marginRight = 'auto';
-            canvas.style.width = canvas.width + 'px'; // Set exact width for Tetris
-            canvas.style.height = canvas.height + 'px'; // Set exact height for Tetris
+            // Re-calculate TETRIS_BLOCK_SIZE based on current canvas width, ensuring it's set for new game
+            window.TETRIS_BLOCK_SIZE = Math.floor(canvas.width / TETRIS_COLS);
+
             gameState = {
                 board: Array(TETRIS_ROWS).fill(0).map(() => Array(TETRIS_COLS).fill(0)),
                 currentPiece: null, nextPiece: null, pieceX: 0, pieceY: 0, currentPieceColor: '',
@@ -1569,9 +2018,9 @@
                 for (let x = 0; x < TETRIS_COLS; x++) {
                     if (gameState.board[y][x] !== 0) {
                         ctx.fillStyle = gameState.board[y][x];
-                        ctx.fillRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                        ctx.fillRect(x * window.TETRIS_BLOCK_SIZE, y * window.TETRIS_BLOCK_SIZE, window.TETRIS_BLOCK_SIZE - 1, window.TETRIS_BLOCK_SIZE - 1);
                         ctx.strokeStyle = '#000'; // Block borders
-                        ctx.strokeRect(x * TETRIS_BLOCK_SIZE, y * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                        ctx.strokeRect(x * window.TETRIS_BLOCK_SIZE, y * window.TETRIS_BLOCK_SIZE, window.TETRIS_BLOCK_SIZE - 1, window.TETRIS_BLOCK_SIZE - 1);
                     }
                 }
             }
@@ -1582,9 +2031,9 @@
                 for (let y = 0; y < gameState.currentPiece.length; y++) {
                     for (let x = 0; x < gameState.currentPiece[y].length; x++) {
                         if (gameState.currentPiece[y][x] !== 0) {
-                            ctx.fillRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                            ctx.fillRect((gameState.pieceX + x) * window.TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * window.TETRIS_BLOCK_SIZE, window.TETRIS_BLOCK_SIZE - 1, window.TETRIS_BLOCK_SIZE - 1);
                             ctx.strokeStyle = '#000'; // Block borders
-                            ctx.strokeRect((gameState.pieceX + x) * TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE - 1, TETRIS_BLOCK_SIZE - 1);
+                            ctx.strokeRect((gameState.pieceX + x) * window.TETRIS_BLOCK_SIZE, (gameState.pieceY + y) * window.TETRIS_BLOCK_SIZE, window.TETRIS_BLOCK_SIZE - 1, window.TETRIS_BLOCK_SIZE - 1);
                         }
                     }
                 }
@@ -1592,56 +2041,54 @@
 
             // Draw grid lines for visual clarity
             ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1 * (window.TETRIS_BLOCK_SIZE / 20); // Scale line width
             for (let i = 0; i <= TETRIS_COLS; i++) {
                 ctx.beginPath();
-                ctx.moveTo(i * TETRIS_BLOCK_SIZE, 0);
-                ctx.lineTo(i * TETRIS_BLOCK_SIZE, canvas.height);
+                ctx.moveTo(i * window.TETRIS_BLOCK_SIZE, 0);
+                ctx.lineTo(i * window.TETRIS_BLOCK_SIZE, canvas.height);
                 ctx.stroke();
             }
             for (let i = 0; i <= TETRIS_ROWS; i++) {
                 ctx.beginPath();
-                ctx.moveTo(0, i * TETRIS_BLOCK_SIZE);
-                ctx.lineTo(canvas.width, i * TETRIS_BLOCK_SIZE);
+                ctx.moveTo(0, i * window.TETRIS_BLOCK_SIZE);
+                ctx.lineTo(canvas.width, i * window.TETRIS_BLOCK_SIZE);
                 ctx.stroke();
             }
 
             // Display Level and Lines Cleared (optional, for Tetris specific)
             ctx.fillStyle = '#00ff41';
-            ctx.font = '16px "Courier New", monospace';
+            ctx.font = `${16 * (window.TETRIS_BLOCK_SIZE / 20)}px "Courier New", monospace`; // Scaled font size
             ctx.textAlign = 'left';
-            ctx.fillText(`Level: ${gameState.level}`, 5, 20);
-            ctx.fillText(`Lines: ${gameState.linesCleared}`, 5, 40);
+            ctx.fillText(`Level: ${gameState.level}`, 5 * (window.TETRIS_BLOCK_SIZE / 20), 20 * (window.TETRIS_BLOCK_SIZE / 20));
+            ctx.fillText(`Lines: ${gameState.linesCleared}`, 5 * (window.TETRIS_BLOCK_SIZE / 20), 40 * (window.TETRIS_BLOCK_SIZE / 20));
         }
         // --- End Tetris Game ---
 
         // --- Minesweeper Game ---
-        const MINE_CELL_SIZE = 30;
+        // MINE_CELL_SIZE will be dynamically calculated in resizeCanvas
+        // Define original rows/cols for scaling reference
+        const MINESWEEPER_DEFAULT_ROWS = 16;
+        const MINESWEEPER_DEFAULT_COLS = 16;
+        const MINESWEEPER_DEFAULT_MINES = 40;
+        const MINESWEEPER_ORIGINAL_CELL_SIZE = 30;
 
         function initMinesweeper() {
             gameState = {
-                rows: 16, // Default rows
-                cols: 16, // Default columns
-                mines: 40, // Default number of mines
-                board: [], // -1 for mine, 0-8 for surrounding mines
-                revealed: [], // true if cell is revealed
-                flagged: [], // true if cell is flagged
+                rows: MINESWEEPER_DEFAULT_ROWS,
+                cols: MINESWEEPER_DEFAULT_COLS,
+                mines: MINESWEEPER_DEFAULT_MINES,
+                board: [],
+                revealed: [],
+                flagged: [],
                 gameOver: false,
                 gameWon: false,
                 startTime: 0,
                 timer: 0,
                 minesRemaining: 0
             };
-
-            // Set canvas size based on game board dimensions
-            canvas.width = gameState.cols * MINE_CELL_SIZE;
-            canvas.height = gameState.rows * MINE_CELL_SIZE;
-
-            // Ensure canvas is positioned correctly for Minesweeper, if its size is different
-            canvas.style.marginLeft = 'auto';
-            canvas.style.marginRight = 'auto';
-            canvas.style.width = canvas.width + 'px'; // Set exact width
-            canvas.style.height = canvas.height + 'px'; // Set exact height
+            
+            // Re-calculate MINE_CELL_SIZE based on current canvas width, ensuring it's set for new game
+            window.MINE_CELL_SIZE = Math.floor(canvas.width / gameState.cols);
 
             // Initialize board, revealed, and flagged arrays
             for (let r = 0; r < gameState.rows; r++) {
@@ -1710,11 +2157,15 @@
             if (gameState.gameOver || gameState.gameWon || !canvas || document.getElementById('messageBox').style.display === 'block') return;
 
             const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            // Scale mouse coordinates to internal canvas coordinates
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
 
-            const c = Math.floor(x / MINE_CELL_SIZE);
-            const r = Math.floor(y / MINE_CELL_SIZE);
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            const c = Math.floor(x / window.MINE_CELL_SIZE);
+            const r = Math.floor(y / window.MINE_CELL_SIZE);
 
             // Basic bounds check
             if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols) {
@@ -1735,11 +2186,15 @@
             if (gameState.gameOver || gameState.gameWon || !canvas || document.getElementById('messageBox').style.display === 'block') return;
 
             const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            // Scale mouse coordinates to internal canvas coordinates
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
 
-            const c = Math.floor(x / MINE_CELL_SIZE);
-            const r = Math.floor(y / MINE_CELL_SIZE);
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            const c = Math.floor(x / window.MINE_CELL_SIZE);
+            const r = Math.floor(y / window.MINE_CELL_SIZE);
 
             // Basic bounds check
             if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols) {
@@ -1824,99 +2279,113 @@
 
         function drawMinesweeper() {
             if (!ctx) return;
+            const currentCellSize = window.MINE_CELL_SIZE;
+            const scaleFactor = currentCellSize / MINESWEEPER_ORIGINAL_CELL_SIZE;
+
             for (let r = 0; r < gameState.rows; r++) {
                 for (let c = 0; c < gameState.cols; c++) {
-                    const x = c * MINE_CELL_SIZE;
-                    const y = r * MINE_CELL_SIZE;
+                    const x = c * currentCellSize;
+                    const y = r * currentCellSize;
 
                     // Draw cell background
                     if (gameState.revealed[r][c]) {
                         ctx.fillStyle = '#333'; // Darker for revealed cells
-                        ctx.fillRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                        ctx.fillRect(x, y, currentCellSize, currentCellSize);
                         if (gameState.board[r][c] === -1) {
                             // Draw mine (black circle with white cross)
                             ctx.fillStyle = '#ff0041'; // Red for mine
                             ctx.beginPath();
-                            ctx.arc(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 2, MINE_CELL_SIZE / 3, 0, Math.PI * 2);
+                            ctx.arc(x + currentCellSize / 2, y + currentCellSize / 2, currentCellSize / 3, 0, Math.PI * 2);
                             ctx.fill();
                             ctx.strokeStyle = '#fff';
-                            ctx.lineWidth = 2;
+                            ctx.lineWidth = 2 * scaleFactor; // Scaled line width
                             ctx.beginPath();
-                            ctx.moveTo(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 4);
-                            ctx.lineTo(x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE * 3 / 4);
-                            ctx.moveTo(x + MINE_CELL_SIZE / 4, y + MINE_CELL_SIZE / 2);
-                            ctx.lineTo(x + MINE_CELL_SIZE * 3 / 4, y + MINE_CELL_SIZE / 2);
+                            ctx.moveTo(x + currentCellSize / 2, y + currentCellSize / 4);
+                            ctx.lineTo(x + currentCellSize / 2, y + currentCellSize * 3 / 4);
+                            ctx.moveTo(x + currentCellSize / 4, y + currentCellSize / 2);
+                            ctx.lineTo(x + currentCellSize * 3 / 4, y + currentCellSize / 2);
                             ctx.stroke();
                         } else if (gameState.board[r][c] > 0) {
                             // Draw number of adjacent mines
                             const num = gameState.board[r][c];
                             const colors = ['#0000ff', '#008000', '#ff0000', '#000080', '#800000', '#008080', '#000', '#808080']; // Colors for numbers 1-8
                             ctx.fillStyle = colors[num - 1]; // Get color based on number
-                            ctx.font = `${MINE_CELL_SIZE * 0.7}px 'Courier New', monospace`;
+                            ctx.font = `${currentCellSize * 0.7}px 'Courier New', monospace`;
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
-                            ctx.fillText(num.toString(), x + MINE_CELL_SIZE / 2, y + MINE_CELL_SIZE / 2);
+                            ctx.fillText(num.toString(), x + currentCellSize / 2, y + currentCellSize / 2);
                         }
                     } else {
                         // Draw unrevealed cell
                         ctx.fillStyle = '#666'; // Gray for unrevealed cells
-                        ctx.fillRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                        ctx.fillRect(x, y, currentCellSize, currentCellSize);
                         if (gameState.flagged[r][c]) {
                             // Draw flag
                             ctx.fillStyle = '#ffff00'; // Yellow flag
                             ctx.beginPath();
-                            ctx.moveTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.8);
-                            ctx.lineTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.2);
-                            ctx.lineTo(x + MINE_CELL_SIZE * 0.8, y + MINE_CELL_SIZE * 0.3);
-                            ctx.lineTo(x + MINE_CELL_SIZE * 0.2, y + MINE_CELL_SIZE * 0.4);
+                            ctx.moveTo(x + currentCellSize * 0.2, y + currentCellSize * 0.8);
+                            ctx.lineTo(x + currentCellSize * 0.2, y + currentCellSize * 0.2);
+                            ctx.lineTo(x + currentCellSize * 0.8, y + currentCellSize * 0.3);
+                            ctx.lineTo(x + currentCellSize * 0.2, y + currentCellSize * 0.4);
                             ctx.closePath();
                             ctx.fill();
                             ctx.strokeStyle = '#333';
-                            ctx.lineWidth = 2;
+                            ctx.lineWidth = 2 * scaleFactor; // Scaled line width
                             ctx.stroke();
                         }
                     }
                     ctx.strokeStyle = '#000'; // Cell borders
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x, y, MINE_CELL_SIZE, MINE_CELL_SIZE);
+                    ctx.lineWidth = 1 * scaleFactor; // Scaled line width
+                    ctx.strokeRect(x, y, currentCellSize, currentCellSize);
                 }
             }
         }
         // --- End Minesweeper Game ---
 
         // --- Galactic Invaders Game ---
-        const PLAYER_SPEED = 200; // Pixels per second
-        const PLAYER_BULLET_SPEED = 600; 
-        const PLAYER_SHOOT_COOLDOWN = 0.5; // seconds
+        // Original constants for scaling reference
+        const GI_ORIGINAL_PLAYER_WIDTH = 40;
+        const GI_ORIGINAL_PLAYER_HEIGHT = 20;
+        const GI_ORIGINAL_PLAYER_Y_OFFSET = 50; // Distance from bottom
+        const GI_ORIGINAL_PLAYER_BULLET_RADIUS = 3;
+        const GI_ORIGINAL_ENEMY_WIDTH = 30;
+        const GI_ORIGINAL_ENEMY_HEIGHT = 20;
+        const GI_ORIGINAL_ENEMY_BULLET_RADIUS = 3;
+        const GI_ORIGINAL_ENEMY_ADVANCE_Y = 20; // Original vertical drop when changing direction
+        const GI_ORIGINAL_OFFSET_Y = 50; // Original vertical offset of enemy group from top
+        const GI_ORIGINAL_HORIZONTAL_SPACING = 15;
+        const GI_ORIGINAL_VERTICAL_SPACING = 20;
 
-        const ENEMY_NORMAL_SPEED_X = 50; // Horizontal speed when not diving
-        const ENEMY_NORMAL_SPEED_Y = 20; // Vertical drop when changing direction
-        const ENEMY_DIVE_SPEED = 200; // Faster vertical speed when diving
+        // Speeds remain constant relative to screen size (pixels per second)
+        const PLAYER_SPEED = 200; 
+        const PLAYER_BULLET_SPEED = 600; 
+        const PLAYER_SHOOT_COOLDOWN = 0.5;
+
+        const ENEMY_NORMAL_SPEED_X = 50; 
+        const ENEMY_NORMAL_SPEED_Y = 20; 
+        const ENEMY_DIVE_SPEED = 200; 
         const ENEMY_BULLET_SPEED = 150;
-        const ENEMY_BASE_SHOULD_SHOOT_CHANCE = 0.0005; // Per enemy per frame (lower base)
-        const ENEMY_BASE_RAM_CHANCE = 0.00005; // SIGNIFICANTLY INCREASED BASE for ramming (was 0.00001)
+        const ENEMY_BASE_SHOULD_SHOOT_CHANCE = 0.0005; 
+        const ENEMY_BASE_RAM_CHANCE = 0.00005;
 
         function initGalacticInvaders() {
-            canvas.width = 600; // Set canvas dimensions for Galactic Invaders
-            canvas.height = 700;
-            canvas.style.width = '600px'; // Ensure fixed size for this game
-            canvas.style.height = '700px';
-            canvas.style.marginLeft = 'auto';
-            canvas.style.marginRight = 'auto';
+            // No direct canvas width/height assignment here, handled by resizeCanvas
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 700;
 
             gameState = {
                 player: {
                     x: canvas.width / 2,
-                    y: canvas.height - 50,
-                    width: 40,
-                    height: 20,
+                    y: canvas.height - (GI_ORIGINAL_PLAYER_Y_OFFSET * scaleFactorY), // Scaled
+                    width: GI_ORIGINAL_PLAYER_WIDTH * scaleFactorX, // Scaled
+                    height: GI_ORIGINAL_PLAYER_HEIGHT * scaleFactorY, // Scaled
                     lastShotTime: 0,
                     canShoot: true,
-                    isDestroyed: false, // true when player is exploded
-                    isInvincible: false, // true during invincibility period
-                    invincibilityTimer: 0, // counts down invincibility time
-                    invincibilityDuration: 2, // 2 seconds of invincibility after respawn
-                    blinkInterval: 0.1 // For visual blinking during invincibility
+                    isDestroyed: false,
+                    isInvincible: false,
+                    invincibilityTimer: 0,
+                    invincibilityDuration: 2,
+                    blinkInterval: 0.1
                 },
                 playerBullets: [],
                 enemies: [],
@@ -1924,15 +2393,15 @@
                 score: 0,
                 lives: 3,
                 wave: 1,
-                enemyDirection: 1, // 1 for right, -1 for left
+                enemyDirection: 1,
                 enemyAdvanceTimer: 0,
-                enemyAdvanceInterval: 2, // seconds
-                waveOscillationAmplitude: 5, // How much enemies move up/down
-                waveOscillationFrequency: 5, // How fast they oscillate
+                enemyAdvanceInterval: 2,
+                waveOscillationAmplitude: 5 * scaleFactorY, // Scaled
+                waveOscillationFrequency: 5,
                 currentEnemyShootChance: ENEMY_BASE_SHOULD_SHOOT_CHANCE,
                 currentEnemyRamChance: ENEMY_BASE_RAM_CHANCE,
-                explosions: [], // stores active explosion animations
-                explosionDuration: 0.5 // duration of explosion animation
+                explosions: [],
+                explosionDuration: 0.5
             };
             
             spawnEnemyWave();
@@ -1941,72 +2410,70 @@
 
         // Draw Player Ship (more detailed)
         function drawPlayerShip(player) {
-            // Implement blinking during invincibility
             const currentTimeSeconds = performance.now() / 1000;
             if (player.isInvincible && Math.floor(currentTimeSeconds / player.blinkInterval) % 2 === 0) {
-                return; // Don't draw if blinking off
+                return;
             }
 
-            ctx.fillStyle = '#00ff41'; // Green ship body
-            ctx.strokeStyle = '#00cc00'; // Darker green outline
-            ctx.lineWidth = 2;
+            const scaleX = canvas.width / 600;
+            const scaleY = canvas.height / 700;
+
+            ctx.fillStyle = '#00ff41';
+            ctx.strokeStyle = '#00cc00';
+            ctx.lineWidth = 2 * Math.min(scaleX, scaleY);
 
             ctx.beginPath();
-            // Main body
-            ctx.moveTo(player.x, player.y - player.height); // Top point
-            ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2); // Bottom-left
-            ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2); // Bottom-right
+            ctx.moveTo(player.x, player.y - player.height * 0.5); // Top point relative to player.y (center-ish)
+            ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2);
+            ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            // Cockpit (small rectangle on top)
-            ctx.fillStyle = '#00ffff'; // Cyan for cockpit
-            ctx.fillRect(player.x - player.width / 8, player.y - player.height * 0.8, player.width / 4, player.height / 3);
+            ctx.fillStyle = '#00ffff';
+            ctx.fillRect(player.x - player.width / 8, player.y - player.height * 0.4, player.width / 4, player.height / 3);
             ctx.strokeStyle = '#00aaaa';
-            ctx.strokeRect(player.x - player.width / 8, player.y - player.height * 0.8, player.width / 4, player.height / 3);
+            ctx.strokeRect(player.x - player.width / 8, player.y - player.height * 0.4, player.width / 4, player.height / 3);
 
-            // Left wing (simple triangle)
-            ctx.fillStyle = '#88ff88'; // Lighter green for wings
+            ctx.fillStyle = '#88ff88';
             ctx.beginPath();
             ctx.moveTo(player.x - player.width / 2, player.y + player.height / 2);
-            ctx.lineTo(player.x - player.width / 2 - 10, player.y + player.height / 2);
-            ctx.lineTo(player.x - player.width / 2, player.y);
+            ctx.lineTo(player.x - player.width / 2 - (10 * scaleX), player.y + player.height / 2);
+            ctx.lineTo(player.x - player.width / 2, player.y - (5 * scaleY)); // Adjusted for a better wing shape
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            // Right wing
             ctx.beginPath();
             ctx.moveTo(player.x + player.width / 2, player.y + player.height / 2);
-            ctx.lineTo(player.x + player.width / 2 + 10, player.y + player.height / 2);
-            ctx.lineTo(player.x + player.width / 2, player.y);
+            ctx.lineTo(player.x + player.width / 2 + (10 * scaleX), player.y + player.height / 2);
+            ctx.lineTo(player.x + player.width / 2, player.y - (5 * scaleY));
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            // Thrusters (rectangles at the back)
-            ctx.fillStyle = '#ff8800'; // Orange for thrusters
-            ctx.fillRect(player.x - player.width / 4, player.y + player.height / 2, player.width / 8, 5);
-            ctx.fillRect(player.x + player.width / 8, player.y + player.height / 2, player.width / 8, 5);
+            ctx.fillStyle = '#ff8800';
+            ctx.fillRect(player.x - player.width / 4, player.y + player.height / 2, player.width / 8, 5 * scaleY);
+            ctx.fillRect(player.x + player.width / 8, player.y + player.height / 2, player.width / 8, 5 * scaleY);
         }
 
         // Draw Enemy Ship (more detailed)
         function drawEnemyShip(enemy) {
+            const scaleX = canvas.width / 600;
+            const scaleY = canvas.height / 700;
+
             ctx.fillStyle = enemy.color;
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1 * Math.min(scaleX, scaleY);
 
             ctx.beginPath();
-            // Main body (oval-like or small spaceship)
             ctx.ellipse(enemy.x, enemy.y, enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Wings/Fins
             ctx.beginPath();
             ctx.moveTo(enemy.x - enemy.width / 2, enemy.y);
-            ctx.lineTo(enemy.x - enemy.width / 2 - 5, enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x - enemy.width / 2 - (5 * scaleX), enemy.y + enemy.height / 3);
             ctx.lineTo(enemy.x - enemy.width / 2, enemy.y + enemy.height / 2);
             ctx.closePath();
             ctx.fill();
@@ -2014,46 +2481,42 @@
 
             ctx.beginPath();
             ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
-            ctx.lineTo(enemy.x + enemy.width / 2 + 5, enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x + enemy.width / 2 + (5 * scaleX), enemy.y + enemy.height / 3);
             ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
             
-            // Cockpit/Eye
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.arc(enemy.x, enemy.y - enemy.height / 4, 3, 0, Math.PI * 2);
+            ctx.arc(enemy.x, enemy.y - enemy.height / 4, 3 * Math.min(scaleX, scaleY), 0, Math.PI * 2);
             ctx.fill();
 
-            // Antennae
             ctx.strokeStyle = '#eee';
             ctx.beginPath();
             ctx.moveTo(enemy.x - enemy.width / 4, enemy.y - enemy.height / 2);
-            ctx.lineTo(enemy.x - enemy.width / 4 - 5, enemy.y - enemy.height / 2 - 5);
+            ctx.lineTo(enemy.x - enemy.width / 4 - (5 * scaleX), enemy.y - enemy.height / 2 - (5 * scaleY));
             ctx.moveTo(enemy.x + enemy.width / 4, enemy.y - enemy.height / 2);
-            ctx.lineTo(enemy.x + enemy.width / 4 + 5, enemy.y - enemy.height / 2 - 5);
+            ctx.lineTo(enemy.x + enemy.width / 4 + (5 * scaleX), enemy.y - enemy.height / 2 - (5 * scaleY));
             ctx.stroke();
         }
 
         // New function to draw an explosion
         function drawExplosion(explosion, totalDuration) {
             if (!ctx) return;
-            const progress = 1 - (explosion.timer / totalDuration); // 0 (start) to 1 (end)
-            const maxRadius = 30;
+            const progress = 1 - (explosion.timer / totalDuration);
+            const maxRadius = 30 * (canvas.width / 600); // Scaled max radius
             const currentRadius = maxRadius * progress;
-            const alpha = 1 - progress; // Fades out
+            const alpha = 1 - progress;
 
             ctx.save();
             ctx.globalAlpha = alpha;
 
-            // Outer circle (orange/red)
             ctx.fillStyle = `rgba(255, ${Math.floor(165 * (1 - progress))}, 0, ${alpha})`;
             ctx.beginPath();
             ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Inner circle (yellow/white)
             ctx.fillStyle = `rgba(255, 255, ${Math.floor(100 * (1 - progress))}, ${alpha * 0.8})`;
             ctx.beginPath();
             ctx.arc(explosion.x, explosion.y, currentRadius * 0.6, 0, Math.PI * 2);
@@ -2069,32 +2532,30 @@
             const maxEnemyRows = 7; 
             const baseEnemiesPerRow = 6; 
             
-            // Calculate actual rows and enemies per row, increasing with wave
             const enemyRows = Math.min(baseEnemyRows + Math.floor((gameState.wave - 1) / 2), maxEnemyRows); 
-            const enemiesPerRow = Math.min(baseEnemiesPerRow + Math.floor((gameState.wave - 1) * 0.75), 10); // More enemies per wave, up to max 10
+            const enemiesPerRow = Math.min(baseEnemiesPerRow + Math.floor((gameState.wave - 1) * 0.75), 10);
 
-            const enemyWidth = 30;
-            const enemyHeight = 20;
-            const horizontalSpacing = 15; // Increased spacing
-            const verticalSpacing = 20; // Spacing between rows
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 700;
 
-            // Calculate total width of the enemy group
+            const enemyWidth = GI_ORIGINAL_ENEMY_WIDTH * scaleFactorX;
+            const enemyHeight = GI_ORIGINAL_ENEMY_HEIGHT * scaleFactorY;
+            const horizontalSpacing = GI_ORIGINAL_HORIZONTAL_SPACING * scaleFactorX;
+            const verticalSpacing = GI_ORIGINAL_VERTICAL_SPACING * scaleFactorY;
+
             const totalGroupWidth = enemiesPerRow * enemyWidth + (enemiesPerRow - 1) * horizontalSpacing;
-            // Calculate starting X to center the entire group of enemies
             const startX = (canvas.width - totalGroupWidth) / 2;
-            const offsetY = 50;
+            const offsetY = GI_ORIGINAL_OFFSET_Y * scaleFactorY;
 
-            // Increase ramming and shooting chances with each wave
             gameState.currentEnemyShootChance = ENEMY_BASE_SHOULD_SHOOT_CHANCE * (1 + (gameState.wave - 1) * 0.1); 
-            // Significantly increase ram chance with each wave for a more aggressive feel
             gameState.currentEnemyRamChance = ENEMY_BASE_RAM_CHANCE * (1 + (gameState.wave - 1) * 0.5); 
 
             for (let r = 0; r < enemyRows; r++) { 
                 for (let c = 0; c < enemiesPerRow; c++) {
                     gameState.enemies.push({
-                        x: startX + c * (enemyWidth + horizontalSpacing) + (Math.random() * 10 - 5), // Add small random offset
-                        y: offsetY + r * (enemyHeight + verticalSpacing) + (Math.random() * 10 - 5), // Add small random offset
-                        initialY: offsetY + r * (enemyHeight + verticalSpacing), // Store initial Y for oscillation
+                        x: startX + c * (enemyWidth + horizontalSpacing) + (Math.random() * 10 - 5) * scaleFactorX,
+                        y: offsetY + r * (enemyHeight + verticalSpacing) + (Math.random() * 10 - 5) * scaleFactorY,
+                        initialY: offsetY + r * (enemyHeight + verticalSpacing),
                         width: enemyWidth,
                         height: enemyHeight,
                         color: `hsl(${Math.random() * 360}, 80%, 70%)`, 
@@ -2108,11 +2569,12 @@
         function firePlayerBullet() {
             const currentTime = performance.now() / 1000;
             if (currentTime - gameState.player.lastShotTime > PLAYER_SHOOT_COOLDOWN) {
+                const scaleFactor = canvas.width / 600;
                 gameState.playerBullets.push({
                     x: gameState.player.x,
                     y: gameState.player.y - gameState.player.height / 2,
-                    radius: 3,
-                    vy: -PLAYER_BULLET_SPEED
+                    radius: GI_ORIGINAL_PLAYER_BULLET_RADIUS * scaleFactor,
+                    vy: -PLAYER_BULLET_SPEED * (canvas.height / 700) // Scale bullet speed by Y
                 });
                 gameState.player.lastShotTime = currentTime;
             }
@@ -2120,8 +2582,10 @@
 
         function updateGalacticInvaders(deltaTime) {
             const currentTimeSeconds = performance.now() / 1000;
+            const scaleFactorX = canvas.width / 600;
+            const scaleFactorY = canvas.height / 700;
 
-            // Update player invincibility
+
             if (gameState.player.isInvincible) {
                 gameState.player.invincibilityTimer -= deltaTime;
                 if (gameState.player.invincibilityTimer <= 0) {
@@ -2129,12 +2593,12 @@
                 }
             }
 
-            // Player movement
+            // Player movement scaled by current canvas width
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                gameState.player.x -= PLAYER_SPEED * deltaTime;
+                gameState.player.x -= PLAYER_SPEED * scaleFactorX * deltaTime;
             }
             if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                gameState.player.x += PLAYER_SPEED * deltaTime;
+                gameState.player.x += PLAYER_SPEED * scaleFactorX * deltaTime;
             }
             // Clamp player position
             gameState.player.x = Math.max(gameState.player.width / 2, Math.min(canvas.width - gameState.player.width / 2, gameState.player.x));
@@ -2152,18 +2616,19 @@
 
             if (gameState.enemyAdvanceTimer >= gameState.enemyAdvanceInterval) {
                 gameState.enemyAdvanceTimer = 0;
-                // Check if enemies hit side walls for group movement
                 for (const enemy of gameState.enemies) {
-                    if (!enemy.isDiving && ((gameState.enemyDirection === 1 && enemy.x + enemy.width / 2 >= canvas.width - 10) ||
-                                            (gameState.enemyDirection === -1 && enemy.x - enemy.width / 2 <= 10))) {
+                    // Adjust margin from wall for check based on scaling
+                    const wallMargin = 10 * scaleFactorX;
+                    if (!enemy.isDiving && ((gameState.enemyDirection === 1 && enemy.x + enemy.width / 2 >= canvas.width - wallMargin) ||
+                                            (gameState.enemyDirection === -1 && enemy.x - enemy.width / 2 <= wallMargin))) {
                         hitWallThisFrame = true;
                         break;
                     }
                 }
 
                 if (hitWallThisFrame) {
-                    gameState.enemyDirection *= -1; // Reverse global direction
-                    advanceDown = true; // Signal for all non-diving enemies to move down
+                    gameState.enemyDirection *= -1;
+                    advanceDown = true;
                 }
             }
 
@@ -2171,43 +2636,36 @@
                 const enemy = gameState.enemies[i];
 
                 if (enemy.isDiving) {
-                    // Diving behavior
-                    enemy.y += ENEMY_DIVE_SPEED * deltaTime;
-                    // Move towards dive target X
+                    enemy.y += ENEMY_DIVE_SPEED * scaleFactorY * deltaTime; // Scale dive speed by Y
                     const dx = enemy.diveTargetX - enemy.x;
-                    if (Math.abs(dx) > 5) { // Only adjust X if not very close
-                        enemy.x += Math.sign(dx) * ENEMY_DIVE_SPEED * 0.5 * deltaTime; // Horizontal chase during dive
+                    if (Math.abs(dx) > 5 * scaleFactorX) { // Scale closeness threshold
+                        enemy.x += Math.sign(dx) * ENEMY_DIVE_SPEED * 0.5 * scaleFactorX * deltaTime; // Horizontal chase during dive, scaled
                     }
                     
-                    // If diving enemy goes below the canvas, reset to top and continue dive
                     if (enemy.y - enemy.height / 2 > canvas.height) {
-                        enemy.y = -enemy.height / 2; // Reset to just above top
-                        enemy.x = gameState.player.x; // Target player's current X for the new dive
-                        enemy.diveTargetX = gameState.player.x; // Update target for next dive
+                        enemy.y = -enemy.height / 2;
+                        enemy.x = gameState.player.x;
+                        enemy.diveTargetX = gameState.player.x;
                     }
                 } else {
-                    // Normal formation movement
-                    enemy.x += gameState.enemyDirection * ENEMY_NORMAL_SPEED_X * deltaTime;
+                    enemy.x += gameState.enemyDirection * ENEMY_NORMAL_SPEED_X * scaleFactorX * deltaTime; // Scaled normal X speed
                     if (advanceDown) {
-                        enemy.initialY += ENEMY_NORMAL_SPEED_Y; // Update base Y for next oscillation cycle
+                        enemy.initialY += ENEMY_NORMAL_SPEED_Y * scaleFactorY; // Scaled vertical drop
                     }
-                    // Apply oscillation based on current time and initial Y
-                    enemy.y = enemy.initialY + Math.sin(currentTimeSeconds * gameState.waveOscillationFrequency + enemy.x / 50) * gameState.waveOscillationAmplitude;
+                    enemy.y = enemy.initialY + Math.sin(currentTimeSeconds * gameState.waveOscillationFrequency + enemy.x / (50 * scaleFactorX)) * gameState.waveOscillationAmplitude;
 
-                    // Enemy decision: Dive or Shoot
-                    if (Math.random() < gameState.currentEnemyRamChance) { // Use dynamic ram chance
+                    if (Math.random() < gameState.currentEnemyRamChance) {
                         enemy.isDiving = true;
-                        enemy.diveTargetX = gameState.player.x; // Set target X when dive starts
-                    } else if (Math.random() < gameState.currentEnemyShootChance) { // Use dynamic shoot chance
+                        enemy.diveTargetX = gameState.player.x;
+                    } else if (Math.random() < gameState.currentEnemyShootChance) {
                         gameState.enemyBullets.push({
                             x: enemy.x,
                             y: enemy.y + enemy.height / 2,
-                            radius: 3,
-                            vy: ENEMY_BULLET_SPEED
+                            radius: GI_ORIGINAL_ENEMY_BULLET_RADIUS * scaleFactorX, // Scaled
+                            vy: ENEMY_BULLET_SPEED * scaleFactorY // Scaled
                         });
                     }
 
-                    // Enemy reaches player's base line - game over (if not already handled by collision)
                     if (enemy.y + enemy.height / 2 >= canvas.height - gameState.player.height * 2) {
                         gameOver();
                         return;
@@ -2227,14 +2685,13 @@
                 const pBullet = gameState.playerBullets[i];
                 for (let j = gameState.enemies.length - 1; j >= 0; j--) {
                     const enemy = gameState.enemies[j];
-                    // Simple AABB (Axis-Aligned Bounding Box) collision for rect vs circle approx
                     const closestX = Math.max(enemy.x - enemy.width / 2, Math.min(pBullet.x, enemy.x + enemy.width / 2));
                     const closestY = Math.max(enemy.y - enemy.height / 2, Math.min(pBullet.y, enemy.y + pBullet.radius)); 
                     const dx = pBullet.x - closestX;
                     const dy = pBullet.y - closestY;
                     const distanceSq = (dx * dx) + (dy * dy);
 
-                    if (distanceSq < (pBullet.radius * pBullet.radius)) { // Collision detected
+                    if (distanceSq < (pBullet.radius * pBullet.radius)) { 
                         gameState.playerBullets.splice(i, 1);
                         gameState.enemies.splice(j, 1);
                         gameState.score += 100;
@@ -2245,22 +2702,21 @@
             }
 
             // Collision detection (Enemy Bullets/Enemies vs Player)
-            // Only check collision if player is not invincible or already destroyed
             if (!gameState.player.isInvincible && !gameState.player.isDestroyed) {
-                // Enemy Bullets vs Player
                 for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
                     const eBullet = gameState.enemyBullets[i];
                     const dx = gameState.player.x - eBullet.x;
                     const dy = gameState.player.y - eBullet.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < gameState.player.width / 2 + eBullet.radius) { 
-                        gameState.enemyBullets.splice(i, 1); // Remove bullet
+                    const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2;
+                    const eBulletHitRadius = playerApproxRadius + eBullet.radius;
+                    if (distance < eBulletHitRadius) { 
+                        gameState.enemyBullets.splice(i, 1);
                         handlePlayerHit();
-                        return; // Exit loop after hit
+                        return;
                     }
                 }
-                // Ramming Enemy collisions with player
                 for (let i = gameState.enemies.length - 1; i >= 0; i--) {
                     const enemy = gameState.enemies[i];
                     if (enemy.isDiving) { 
@@ -2272,9 +2728,9 @@
                         const enemyApproxRadius = Math.max(enemy.width, enemy.height) / 2;
 
                         if (distance < playerApproxRadius + enemyApproxRadius) {
-                            gameState.enemies.splice(i, 1); // Remove enemy on collision
+                            gameState.enemies.splice(i, 1);
                             handlePlayerHit();
-                            return; // Exit loop after hit
+                            return;
                         }
                     }
                 }
@@ -2302,48 +2758,42 @@
             updateGalacticInvadersScoreAndLives();
 
             if (gameState.lives <= 0) {
-                gameState.player.isDestroyed = true; // Ensure player is hidden for game over explosion
+                gameState.player.isDestroyed = true;
                 gameState.explosions.push({ x: gameState.player.x, y: gameState.player.y, timer: gameState.explosionDuration });
                 gameOver();
             } else {
-                gameState.player.isDestroyed = true; // Hide player ship
+                gameState.player.isDestroyed = true;
                 gameState.explosions.push({ x: gameState.player.x, y: gameState.player.y, timer: gameState.explosionDuration });
                 
-                // Set a timeout to respawn the player after the explosion animation
                 setTimeout(() => {
-                    gameState.player.isDestroyed = false; // Make player visible again
-                    gameState.player.x = canvas.width / 2; // Respawn at center
-                    gameState.player.y = canvas.height - 50;
-                    gameState.player.isInvincible = true; // Start invincibility
+                    gameState.player.isDestroyed = false;
+                    gameState.player.x = canvas.width / 2;
+                    gameState.player.y = canvas.height - (GI_ORIGINAL_PLAYER_Y_OFFSET * (canvas.height / 700)); // Respawn position scaled
+                    gameState.player.isInvincible = true;
                     gameState.player.invincibilityTimer = gameState.player.invincibilityDuration;
-                }, gameState.explosionDuration * 1000); // Convert seconds to milliseconds
+                }, gameState.explosionDuration * 1000);
             }
         }
 
         function drawGalacticInvaders() {
-            // Player Ship (only draw if not destroyed and handling blinking)
             if (!gameState.player.isDestroyed) {
                 drawPlayerShip(gameState.player);
             }
             
-            // Draw explosions
             gameState.explosions.forEach(explosion => drawExplosion(explosion, gameState.explosionDuration));
 
-            // Player Bullets
-            ctx.fillStyle = '#00ffff'; // Cyan bullets
+            ctx.fillStyle = '#00ffff';
             gameState.playerBullets.forEach(bullet => {
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            // Enemies
             gameState.enemies.forEach(enemy => {
                 drawEnemyShip(enemy);
             });
 
-            // Enemy Bullets
-            ctx.fillStyle = '#ff0041'; // Red bullets
+            ctx.fillStyle = '#ff0041';
             gameState.enemyBullets.forEach(bullet => {
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
@@ -2354,7 +2804,7 @@
         function updateGalacticInvadersScoreAndLives() {
             document.getElementById('galacticScoreDisplay').textContent = `Score: ${gameState.score}`;
             document.getElementById('galacticLivesDisplay').textContent = `Lives: ${gameState.lives}`;
-            document.getElementById('galacticWaveDisplay').textContent = `Wave: ${gameState.wave}`; // Update wave display
+            document.getElementById('galacticWaveDisplay').textContent = `Wave: ${gameState.wave}`;
         }
         // --- End Galactic Invaders Game ---
 
@@ -2362,18 +2812,27 @@
         // Initial setup on window load
         window.addEventListener('load', () => {
             createStars();
+            // Need to get canvas element here before calling resizeCanvas for the first time
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
             document.getElementById('gameSelection').style.display = 'grid'; // Show game selection menu initially
             document.getElementById('gameArea').style.display = 'none'; // Hide game area initially
             document.getElementById('gameOverOverlay').classList.remove('active'); // Hide game over overlay
             document.getElementById('messageBox').style.display = 'none'; // Hide message box
             document.getElementById('mainHeader').style.display = 'block'; // Ensure header is shown on initial load
-            // Explicitly hide game title on initial load until a game starts
             document.getElementById('gameTitle').style.display = 'none'; 
             updateScore(); // Initial update for score display (will show Score: 0)
         });
 
-        // Re-create stars on window resize to ensure full coverage
-        window.addEventListener('resize', createStars);
+        // Re-create stars and resize canvas on window resize to ensure full coverage and responsiveness
+        window.addEventListener('resize', () => {
+            createStars();
+            // Call resizeCanvas only if a game is currently selected, to avoid errors before game initialization
+            if (currentGame) {
+                resizeCanvas();
+            }
+        });
     </script>
 </body>
 </html>

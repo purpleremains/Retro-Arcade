@@ -1036,7 +1036,10 @@
                     if (this.y + this.height > GROUND_LINE_Y) { this.y = GROUND_LINE_Y - this.height; this.dy = 0; this.isJumping = false; }
                 }
             };
-            gameState.obstacles = []; gameState.gameSpeed = 5; gameState.obstacleSpawnTimer = 0; gameState.obstacleSpawnInterval = 1500;
+            gameState.obstacles = [];
+            gameState.gameSpeed = 3; // Slower initial speed
+            gameState.obstacleSpawnTimer = 0;
+            gameState.obstacleSpawnInterval = 2000; // Longer interval for slower game
         }
 
         function createDinoObstacle() {
@@ -1065,7 +1068,10 @@
             gameState.obstacles = gameState.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
             gameState.obstacleSpawnTimer += deltaTime * 1000;
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
-                createDinoObstacle(); gameState.obstacleSpawnTimer = 0; gameState.gameSpeed += 0.01; gameState.obstacleSpawnInterval = Math.max(800, gameState.obstacleSpawnInterval - 5);
+                createDinoObstacle();
+                gameState.obstacleSpawnTimer = 0;
+                gameState.gameSpeed += 0.005; // Slower speed increase
+                gameState.obstacleSpawnInterval = Math.max(1000, gameState.obstacleSpawnInterval - 2); // Slower interval decrease
             }
             gameState.dino.update(); score++; updateScore();
         }
@@ -1323,8 +1329,10 @@
             if (gameState.ball.x - gameState.ball.radius <= 0) { gameState.ball.x = gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
             else if (gameState.ball.x + gameState.ball.radius >= canvas.width) { gameState.ball.x = canvas.width - gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
             if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy; }
+            // Corrected paddle collision variable reference from `ball` to `gameState.ball`
             if (gameState.ball.vy > 0 && gameState.ball.x + gameState.ball.radius > gameState.paddle.x && gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width && gameState.ball.y + gameState.ball.radius >= gameState.paddle.y && gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
-                ball.y = gameState.paddle.y - ball.radius; ball.vy = -gameState.ball.vy;
+                gameState.ball.y = gameState.paddle.y - gameState.ball.radius; 
+                gameState.ball.vy = -gameState.ball.vy;
                 const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2;
             }
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {

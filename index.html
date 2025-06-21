@@ -149,12 +149,10 @@
         }
         .game-area {
             display: none;
-            /* RE-ADDED: */
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #00ff41;
             border-radius: 15px;
             padding: 20px;
-            /* END RE-ADDED */
             margin-bottom: 20px;
             text-align: center;
             width: 100%;
@@ -279,7 +277,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.98); /* Increased opacity */
+            background: rgba(0, 0, 0, 0.98);
             z-index: 100;
             justify-content: center;
             align-items: center;
@@ -318,7 +316,7 @@
         }
         .game-over-content p {
             font-size: 1.8rem;
-            margin-bottom: 30px;
+            margin-bottom: 10px; /* Reduced margin to make space for high score */
             color: #00ffff;
         }
         .game-over-buttons button {
@@ -341,7 +339,7 @@
 
         /* Message Box Style */
         .message-box {
-            background: rgba(0, 0, 0, 1); /* Increased opacity to full */
+            background: rgba(0, 0, 0, 1);
             border: 2px solid #ffeb3b;
             border-radius: 10px;
             padding: 20px;
@@ -357,6 +355,19 @@
             transform: translate(-50%, -50%);
             z-index: 1000;
             max-width: 80%;
+        }
+
+        /* Galactic Invaders Specific Styles */
+        .galactic-invaders-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            /* min-width: 400px; */ /* Removed max-width to allow more space for wave counter */
+            margin-top: 10px;
+            color: #00ff41;
+            font-size: 1.1rem;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -405,16 +416,33 @@
                 <p class="game-description">Clear the minefield without detonating any hidden mines! Click to reveal a square; if a number appears, it tells you how many mines are adjacent. Right-click (or Ctrl+Click) to flag suspected mine locations. Reveal all non-mine squares to win!</p>
                 <button class="play-btn">Play Now</button>
             </div>
+            <!-- NEW GALAGA-LIKE GAME CARD -->
+            <div class="game-card" onclick="startGame('galacticInvaders')">
+                <h3 class="game-title">🚀 Galactic Invaders</h3>
+                <p class="game-description">Defend your galaxy from waves of alien invaders! Move your ship left and right, and fire lasers to destroy them. Don't let them reach the bottom!</p>
+                <button class="play-btn">Play Now</button>
+            </div>
+            <!-- END NEW GALAGA-LIKE GAME CARD -->
         </div>
 
         <div id="gameArea" class="game-area">
             <h2 id="gameTitle"></h2>
-            <div class="score" id="scoreDisplay">Score: 0</div>
+            <!-- Generic score display, hidden for Minesweeper/GalacticInvaders which have custom info bars -->
+            <div class="score" id="scoreDisplay">Score: 0</div> 
+
             <!-- Minesweeper specific info display -->
             <div id="minesweeperInfo" style="display: none;">
                 <span id="mineCountDisplay">Mines: 0</span>
                 <span id="timerDisplay">Time: 0s</span>
             </div>
+
+            <!-- Galactic Invaders specific info display -->
+            <div id="galacticInvadersInfo" class="galactic-invaders-info" style="display: none;">
+                <span id="galacticScoreDisplay">Score: 0</span>
+                <span id="galacticLivesDisplay">Lives: 3</span>
+                <span id="galacticWaveDisplay">Wave: 1</span>
+            </div>
+
             <!-- Pong Difficulty Selection -->
             <div id="pongDifficultySelection">
                 <h3>Choose Difficulty:</h3>
@@ -429,7 +457,6 @@
             <canvas id="gameCanvas" class="game-canvas" width="600" height="400"></canvas>
             <div class="game-controls" id="gameControls"></div>
             <div class="action-buttons">
-                <!-- Restored and positioned Restart Game button -->
                 <button class="control-btn" id="restartGameButton" onclick="restartGame()" style="background: #ffaa00;">🔄 Restart Game</button>
                 <button class="back-btn" id="backToMenuButton" onclick="backToMenu()">← Back to Games</button>
             </div>
@@ -446,6 +473,7 @@
         <div class="game-over-content">
             <h2>GAME OVER!</h2>
             <p id="finalScoreDisplay">Final Score: 0</p>
+            <!-- High score display removed -->
             <div class="game-over-buttons">
                 <button onclick="restartGameFromGameOver()">Play Again</button>
                 <button onclick="backToMenuFromGameOver()">Back to Menu</button>
@@ -534,6 +562,11 @@
                             }
                         }
                         break;
+                    case 'galacticInvaders':
+                        if (lowerKey === ' ' && gameState.player.canShoot) {
+                            firePlayerBullet();
+                        }
+                        break;
                 }
             }
         });
@@ -564,6 +597,7 @@
                 case 'breakout': updateBreakout(deltaTime); drawBreakout(); break;
                 case 'tetris': updateTetris(deltaTime); drawTetris(); break;
                 case 'minesweeper': updateMinesweeper(deltaTime); drawMinesweeper(); break;
+                case 'galacticInvaders': updateGalacticInvaders(deltaTime); drawGalacticInvaders(); break;
             }
 
             // Continue the loop only if game is active and not showing a message or game over screen
@@ -606,20 +640,21 @@
 
             // Hide game specific elements initially for all games
             document.getElementById('minesweeperInfo').style.display = 'none';
-            document.getElementById('scoreDisplay').style.display = 'none';
+            document.getElementById('scoreDisplay').style.display = 'none'; // Generic score display
+            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Galactic Invaders info display
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
             canvas.style.display = 'none'; 
             // Always hide game title until the game is actually started (not just showing instructions)
             document.getElementById('gameTitle').style.display = 'none'; 
-
-
+            
             currentGame = gameType; // Set current game
 
             // Clear game state and input keys for a fresh start
             score = 0; // Reset score for the game that's about to start
             updateScore(); // This will update the scoreDisplay element
             keysPressed.clear();
+            console.log(`[Game Start] Current score reset to: ${score}`); // Log for debugging
 
             // Remove previous Minesweeper-specific listeners (if any)
             canvas.removeEventListener('click', handleMinesweeperClick);
@@ -631,12 +666,12 @@
                 // For Pong, show difficulty selection first, and the gameArea frame
                 document.getElementById('gameArea').style.display = 'block'; // Show game area for Pong difficulty
                 document.getElementById('pongDifficultySelection').style.display = 'flex';
-                // gameTitle remains hidden here as per user's request. It will be shown in startSelectedPongDifficulty.
+                // gameTitle remains hidden here. It will be shown in startSelectedPongDifficulty.
                 // No need to initialize Pong game state yet, it will be done after difficulty selection
             } else {
                 // For other games, show the gameArea as container for messageBox
                 document.getElementById('gameArea').style.display = 'block'; 
-                // gameTitle is explicitly hidden above. It will be shown when startGameFromOverlay is called.
+                // gameTitle is explicitly hidden above. This will be shown when startGameFromOverlay is called.
                 const controlsText = getControlsText(gameType);
                 // Pass true for isStartOverlay to show 'Start Game' button
                 showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true);
@@ -651,6 +686,7 @@
                     case 'breakout': initBreakout(); break;
                     case 'tetris': initTetris(); break;
                     case 'minesweeper': initMinesweeper(); break;
+                    case 'galacticInvaders': initGalacticInvaders(); break;
                 }
             }
         }
@@ -686,8 +722,14 @@
             if (currentGame === 'minesweeper') {
                 document.getElementById('minesweeperInfo').style.display = 'flex';
                 document.getElementById('scoreDisplay').style.display = 'none'; // Minesweeper uses its own score/timer display
-            } else { // For other games
+            } else if (currentGame === 'galacticInvaders') {
+                document.getElementById('galacticInvadersInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
+                updateGalacticInvadersScoreAndLives(); // Update specific UI
+            }
+            else { // For other games
                 document.getElementById('minesweeperInfo').style.display = 'none';
+                document.getElementById('galacticInvadersInfo').style.display = 'none';
                 document.getElementById('scoreDisplay').style.display = 'block';
             }
             
@@ -710,7 +752,7 @@
             document.getElementById('gameArea').style.display = 'block'; // Game area container should already be visible
             document.getElementById('gameTitle').style.display = 'block'; // Show game title now
             document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
-            canvas.style.display = 'block'; // Show canvas
+            canvas.style.display = 'block'; 
             document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
             document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
             
@@ -718,9 +760,14 @@
             if (currentGame === 'minesweeper') {
                 document.getElementById('minesweeperInfo').style.display = 'flex';
                 document.getElementById('scoreDisplay').style.display = 'none';
+            } else if (currentGame === 'galacticInvaders') {
+                document.getElementById('galacticInvadersInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
+                updateGalacticInvadersScoreAndLives(); // Update specific UI
             }
             else { // For other games
                 document.getElementById('minesweeperInfo').style.display = 'none';
+                document.getElementById('galacticInvadersInfo').style.display = 'none';
                 document.getElementById('scoreDisplay').style.display = 'block';
             }
             
@@ -755,10 +802,11 @@
             }
             gameActive = false; // Stop game logic
 
-            // Determine which overlay to use based on current game type
+            // Get references to elements
             const finalScoreDisplay = document.getElementById('finalScoreDisplay');
             const gameOverH2 = document.getElementById('gameOverOverlay').querySelector('h2');
             const gameOverContent = document.getElementById('gameOverOverlay').querySelector('.game-over-content');
+            // High score display element removed from HTML
 
             if (currentGame === 'minesweeper') {
                 if (status === 'won') {
@@ -774,7 +822,16 @@
                     gameOverContent.style.borderColor = '#ff0041';
                     finalScoreDisplay.textContent = `You hit a mine!`;
                 }
-            } else {
+            } else if (currentGame === 'galacticInvaders') {
+                gameOverH2.textContent = 'GAME OVER!';
+                gameOverH2.style.color = '#ff0077'; // Galaga-like specific color
+                gameOverH2.style.textShadow = '0 0 15px #ff0077';
+                gameOverContent.style.borderColor = '#ff0077';
+                finalScoreDisplay.textContent = `Final Score: ${gameState.score} (Wave ${gameState.wave})`; // Include wave in final score
+
+            }
+            // For all other traditional score games
+            else {
                 gameOverH2.textContent = 'GAME OVER!';
                 gameOverH2.style.color = '#ff0041';
                 gameOverH2.style.textShadow = '0 0 15px #ff0041';
@@ -783,24 +840,6 @@
             }
 
             document.getElementById('gameOverOverlay').classList.add('active');
-
-            // Handle high scores for various games
-            if (currentGame === 'dino') {
-                let dinoHighScore = localStorage.getItem('dinoHighScore') || 0;
-                if (score > dinoHighScore) { localStorage.setItem('dinoHighScore', score); }
-            } else if (currentGame === 'pong') {
-                let pongHighScore = localStorage.getItem('pongHighScore') || 0;
-                if (score > pongHighScore) { localStorage.setItem('pongHighScore', score); }
-            } else if (currentGame === 'asteroids') {
-                let asteroidsHighScore = localStorage.getItem('asteroidsHighScore') || 0;
-                if (score > asteroidsHighScore) { localStorage.setItem('asteroidsHighScore', score); }
-            } else if (currentGame === 'breakout') {
-                let breakoutHighScore = localStorage.getItem('breakoutHighScore') || 0;
-                if (score > breakoutHighScore) { localStorage.setItem('breakoutHighScore', score); }
-            } else if (currentGame === 'tetris') {
-                let tetrisHighScore = localStorage.getItem('tetrisHighScore') || 0;
-                if (score > tetrisHighScore) { localStorage.setItem('tetrisHighScore', score); }
-            }
         }
 
         function restartGame() {
@@ -811,10 +850,11 @@
             }
             gameActive = false; // Ensure game is marked inactive before re-init
 
-            score = 0;
-            updateScore();
+            score = 0; // Reset general score
+            updateScore(); // Update generic score display
             gameState = {}; // Clear previous game state
             keysPressed.clear(); // Clear any pressed keys
+            console.log(`[Game Restart] Current score reset to: ${score}`); // Log for debugging
 
             // Clear canvas display explicitly before re-initializing
             if (ctx) {
@@ -827,8 +867,9 @@
             canvas.style.display = 'none';
             document.getElementById('restartGameButton').style.display = 'none'; 
             document.querySelector('.action-buttons').style.display = 'none'; 
-            document.getElementById('scoreDisplay').style.display = 'none'; 
+            document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
             document.getElementById('minesweeperInfo').style.display = 'none'; 
+            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
             document.getElementById('gameTitle').style.display = 'none'; // Explicitly hide game title on restart
             
             // Ensure gameArea is visible as container for the message/difficulty
@@ -848,35 +889,8 @@
 
         function restartGameFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
-            
-            // Clear canvas explicitly before restarting from game over
-            if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#000'; // Fill with black
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            if (currentGame === 'pong') {
-                startGame('pong', null); 
-            } else {
-                initializeGame(currentGame); 
-                gameActive = true; 
-                document.getElementById('gameArea').style.display = 'block';
-                document.getElementById('gameTitle').style.display = 'block'; // Show game title on immediate restart
-                document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
-                canvas.style.display = 'block'; 
-                document.getElementById('scoreDisplay').style.display = 'block';
-                document.getElementById('restartGameButton').style.display = 'block'; 
-                document.querySelector('.action-buttons').style.display = 'flex'; 
-                if (currentGame === 'minesweeper') {
-                    document.getElementById('minesweeperInfo').style.display = 'flex';
-                } else {
-                    document.getElementById('minesweeperInfo').style.display = 'none';
-                }
-                setupControls(currentGame); 
-                lastFrameTime = performance.now();
-                animationFrameId = requestAnimationFrame(gameLoop); 
-            }
+            // Call startGame for the current game, which handles all necessary resets and setup.
+            startGame(currentGame);
         }
 
 
@@ -911,11 +925,12 @@
             document.getElementById('mainHeader').style.display = 'block';
             
             currentGame = null; // Clear current game selection
-            score = 0; // Reset score for the menu
+            score = 0; // Reset general score for the menu
             updateScore();
             keysPressed.clear(); // Clear any pressed keys
 
             document.getElementById('minesweeperInfo').style.display = 'none'; // Hide Minesweeper info
+            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
             document.getElementById('scoreDisplay').style.display = 'block'; // Ensure general score display is visible
             document.getElementById('restartGameButton').style.display = 'none'; // Hide restart button when back to menu
             document.querySelector('.action-buttons').style.display = 'none'; // Hide action buttons when back to menu
@@ -934,7 +949,7 @@
 
         function updateScore() {
             // This function is for traditional game scores only
-            if (currentGame !== 'minesweeper') { // Minesweeper has its own score display
+            if (currentGame !== 'minesweeper' && currentGame !== 'galacticInvaders') { // Minesweeper and Galactic Invaders have their own score display
                 document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
             }
         }
@@ -949,8 +964,6 @@
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-            // Title is now controlled by display property, not textContent here
-            // document.getElementById('gameTitle').textContent = getGameTitle(gameType);
             
             switch(gameType) {
                 case 'dino': initDino(); break;
@@ -960,6 +973,7 @@
                 case 'breakout': initBreakout(); break;
                 case 'tetris': initTetris(); break;
                 case 'minesweeper': initMinesweeper(); break;
+                case 'galacticInvaders': initGalacticInvaders(); break;
             }
         }
 
@@ -971,7 +985,8 @@
                 asteroids: '💫 Space Rocks',
                 breakout: '🧱 Block Destroyer',
                 tetris: '🟦 Pixel Tetris',
-                minesweeper: '💣 Hidden Grid'
+                minesweeper: '💣 Hidden Grid',
+                galacticInvaders: '🚀 Galactic Invaders'
             };
             return titles[gameType];
         }
@@ -986,6 +1001,7 @@
                 case 'breakout': instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your paddle.'; break;
                 case 'tetris': instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.'; break;
                 case 'minesweeper': instructions = 'Click a square to reveal it. Right-click (or Ctrl+Click) to flag a mine. Clear all non-mine squares to win.'; break;
+                case 'galacticInvaders': instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your ship. Press **SPACEBAR** to shoot.'; break;
                 default: instructions = 'Keyboard controls.';
             }
             return instructions;
@@ -993,8 +1009,7 @@
 
         function setupControls(gameType) {
             const controlsDiv = document.getElementById('gameControls');
-            // Clear the content of the controls div, removing the green-fonted instructions.
-            controlsDiv.innerHTML = ''; 
+            controlsDiv.innerHTML = ''; // Clear the content of the controls div
         }
 
 
@@ -1309,7 +1324,7 @@
             else if (gameState.ball.x + gameState.ball.radius >= canvas.width) { gameState.ball.x = canvas.width - gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
             if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy; }
             if (gameState.ball.vy > 0 && gameState.ball.x + gameState.ball.radius > gameState.paddle.x && gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width && gameState.ball.y + gameState.ball.radius >= gameState.paddle.y && gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
-                gameState.ball.y = gameState.paddle.y - gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy;
+                ball.y = gameState.paddle.y - ball.radius; ball.vy = -gameState.ball.vy;
                 const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2;
             }
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
@@ -1854,6 +1869,480 @@
             }
         }
         // --- End Minesweeper Game ---
+
+        // --- Galactic Invaders Game ---
+        const PLAYER_SPEED = 200; // Pixels per second
+        const PLAYER_BULLET_SPEED = 600; 
+        const PLAYER_SHOOT_COOLDOWN = 0.5; // seconds
+
+        const ENEMY_NORMAL_SPEED_X = 50; // Horizontal speed when not diving
+        const ENEMY_NORMAL_SPEED_Y = 20; // Vertical drop when changing direction
+        const ENEMY_DIVE_SPEED = 200; // Faster vertical speed when diving
+        const ENEMY_BULLET_SPEED = 150;
+        const ENEMY_BASE_SHOULD_SHOOT_CHANCE = 0.0005; // Per enemy per frame (lower base)
+        const ENEMY_BASE_RAM_CHANCE = 0.00001; // EVEN MORE SIGNIFICANTLY LOWER BASE for ramming
+
+        function initGalacticInvaders() {
+            canvas.width = 600; // Set canvas dimensions for Galactic Invaders
+            canvas.height = 700;
+            canvas.style.width = '600px'; // Ensure fixed size for this game
+            canvas.style.height = '700px';
+            canvas.style.marginLeft = 'auto';
+            canvas.style.marginRight = 'auto';
+
+            gameState = {
+                player: {
+                    x: canvas.width / 2,
+                    y: canvas.height - 50,
+                    width: 40,
+                    height: 20,
+                    lastShotTime: 0,
+                    canShoot: true,
+                    isDestroyed: false, // true when player is exploded
+                    isInvincible: false, // true during invincibility period
+                    invincibilityTimer: 0, // counts down invincibility time
+                    invincibilityDuration: 2, // 2 seconds of invincibility after respawn
+                    blinkInterval: 0.1 // For visual blinking during invincibility
+                },
+                playerBullets: [],
+                enemies: [],
+                enemyBullets: [],
+                score: 0,
+                lives: 3,
+                wave: 1,
+                enemyDirection: 1, // 1 for right, -1 for left
+                enemyAdvanceTimer: 0,
+                enemyAdvanceInterval: 2, // seconds
+                waveOscillationAmplitude: 5, // How much enemies move up/down
+                waveOscillationFrequency: 5, // How fast they oscillate
+                currentEnemyShootChance: ENEMY_BASE_SHOULD_SHOOT_CHANCE,
+                currentEnemyRamChance: ENEMY_BASE_RAM_CHANCE,
+                explosions: [], // stores active explosion animations
+                explosionDuration: 0.5 // duration of explosion animation
+            };
+            
+            spawnEnemyWave();
+            updateGalacticInvadersScoreAndLives(); // Initialize UI
+        }
+
+        // Draw Player Ship (more detailed)
+        function drawPlayerShip(player) {
+            // Implement blinking during invincibility
+            const currentTimeSeconds = performance.now() / 1000;
+            if (player.isInvincible && Math.floor(currentTimeSeconds / player.blinkInterval) % 2 === 0) {
+                return; // Don't draw if blinking off
+            }
+
+            ctx.fillStyle = '#00ff41'; // Green ship body
+            ctx.strokeStyle = '#00cc00'; // Darker green outline
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            // Main body
+            ctx.moveTo(player.x, player.y - player.height); // Top point
+            ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2); // Bottom-left
+            ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2); // Bottom-right
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cockpit (small rectangle on top)
+            ctx.fillStyle = '#00ffff'; // Cyan for cockpit
+            ctx.fillRect(player.x - player.width / 8, player.y - player.height * 0.8, player.width / 4, player.height / 3);
+            ctx.strokeStyle = '#00aaaa';
+            ctx.strokeRect(player.x - player.width / 8, player.y - player.height * 0.8, player.width / 4, player.height / 3);
+
+            // Left wing (simple triangle)
+            ctx.fillStyle = '#88ff88'; // Lighter green for wings
+            ctx.beginPath();
+            ctx.moveTo(player.x - player.width / 2, player.y + player.height / 2);
+            ctx.lineTo(player.x - player.width / 2 - 10, player.y + player.height / 2);
+            ctx.lineTo(player.x - player.width / 2, player.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Right wing
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width / 2, player.y + player.height / 2);
+            ctx.lineTo(player.x + player.width / 2 + 10, player.y + player.height / 2);
+            ctx.lineTo(player.x + player.width / 2, player.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Thrusters (rectangles at the back)
+            ctx.fillStyle = '#ff8800'; // Orange for thrusters
+            ctx.fillRect(player.x - player.width / 4, player.y + player.height / 2, player.width / 8, 5);
+            ctx.fillRect(player.x + player.width / 8, player.y + player.height / 2, player.width / 8, 5);
+        }
+
+        // Draw Enemy Ship (more detailed)
+        function drawEnemyShip(enemy) {
+            ctx.fillStyle = enemy.color;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            // Main body (oval-like or small spaceship)
+            ctx.ellipse(enemy.x, enemy.y, enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Wings/Fins
+            ctx.beginPath();
+            ctx.moveTo(enemy.x - enemy.width / 2, enemy.y);
+            ctx.lineTo(enemy.x - enemy.width / 2 - 5, enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x - enemy.width / 2, enemy.y + enemy.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+            ctx.lineTo(enemy.x + enemy.width / 2 + 5, enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Cockpit/Eye
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(enemy.x, enemy.y - enemy.height / 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Antennae
+            ctx.strokeStyle = '#eee';
+            ctx.beginPath();
+            ctx.moveTo(enemy.x - enemy.width / 4, enemy.y - enemy.height / 2);
+            ctx.lineTo(enemy.x - enemy.width / 4 - 5, enemy.y - enemy.height / 2 - 5);
+            ctx.moveTo(enemy.x + enemy.width / 4, enemy.y - enemy.height / 2);
+            ctx.lineTo(enemy.x + enemy.width / 4 + 5, enemy.y - enemy.height / 2 - 5);
+            ctx.stroke();
+        }
+
+        // New function to draw an explosion
+        function drawExplosion(explosion, totalDuration) {
+            if (!ctx) return;
+            const progress = 1 - (explosion.timer / totalDuration); // 0 (start) to 1 (end)
+            const maxRadius = 30;
+            const currentRadius = maxRadius * progress;
+            const alpha = 1 - progress; // Fades out
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+
+            // Outer circle (orange/red)
+            ctx.fillStyle = `rgba(255, ${Math.floor(165 * (1 - progress))}, 0, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner circle (yellow/white)
+            ctx.fillStyle = `rgba(255, 255, ${Math.floor(100 * (1 - progress))}, ${alpha * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(explosion.x, explosion.y, currentRadius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+
+        function spawnEnemyWave() {
+            gameState.enemies = [];
+            const baseEnemyRows = 3; 
+            const maxEnemyRows = 7; 
+            const baseEnemiesPerRow = 6; 
+            
+            // Calculate actual rows and enemies per row, increasing with wave
+            const enemyRows = Math.min(baseEnemyRows + Math.floor((gameState.wave - 1) / 2), maxEnemyRows); 
+            const enemiesPerRow = Math.min(baseEnemiesPerRow + Math.floor((gameState.wave - 1) * 0.75), 10); // More enemies per wave, up to max 10
+
+            const enemyWidth = 30;
+            const enemyHeight = 20;
+            const horizontalSpacing = 15; // Increased spacing
+            const verticalSpacing = 20; // Spacing between rows
+
+            // Calculate total width of the enemy group
+            const totalGroupWidth = enemiesPerRow * enemyWidth + (enemiesPerRow - 1) * horizontalSpacing;
+            // Calculate starting X to center the entire group of enemies
+            const startX = (canvas.width - totalGroupWidth) / 2;
+            const offsetY = 50;
+
+            // Increase ramming and shooting chances with each wave
+            gameState.currentEnemyShootChance = ENEMY_BASE_SHOULD_SHOOT_CHANCE * (1 + (gameState.wave - 1) * 0.1); 
+            // Significantly increase ram chance with each wave for a more aggressive feel
+            gameState.currentEnemyRamChance = ENEMY_BASE_RAM_CHANCE * (1 + (gameState.wave - 1) * 0.5); 
+
+            for (let r = 0; r < enemyRows; r++) { 
+                for (let c = 0; c < enemiesPerRow; c++) {
+                    gameState.enemies.push({
+                        x: startX + c * (enemyWidth + horizontalSpacing) + (Math.random() * 10 - 5), // Add small random offset
+                        y: offsetY + r * (enemyHeight + verticalSpacing) + (Math.random() * 10 - 5), // Add small random offset
+                        initialY: offsetY + r * (enemyHeight + verticalSpacing), // Store initial Y for oscillation
+                        width: enemyWidth,
+                        height: enemyHeight,
+                        color: `hsl(${Math.random() * 360}, 80%, 70%)`, 
+                        isDiving: false,
+                        diveTargetX: 0 
+                    });
+                }
+            }
+        }
+
+        function firePlayerBullet() {
+            const currentTime = performance.now() / 1000;
+            if (currentTime - gameState.player.lastShotTime > PLAYER_SHOOT_COOLDOWN) {
+                gameState.playerBullets.push({
+                    x: gameState.player.x,
+                    y: gameState.player.y - gameState.player.height / 2,
+                    radius: 3,
+                    vy: -PLAYER_BULLET_SPEED
+                });
+                gameState.player.lastShotTime = currentTime;
+            }
+        }
+
+        function updateGalacticInvaders(deltaTime) {
+            const currentTimeSeconds = performance.now() / 1000;
+
+            // Update player invincibility
+            if (gameState.player.isInvincible) {
+                gameState.player.invincibilityTimer -= deltaTime;
+                if (gameState.player.invincibilityTimer <= 0) {
+                    gameState.player.isInvincible = false;
+                }
+            }
+
+            // Player movement
+            if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
+                gameState.player.x -= PLAYER_SPEED * deltaTime;
+            }
+            if (keysPressed.has('arrowright') || keysPressed.has('d')) {
+                gameState.player.x += PLAYER_SPEED * deltaTime;
+            }
+            // Clamp player position
+            gameState.player.x = Math.max(gameState.player.width / 2, Math.min(canvas.width - gameState.player.width / 2, gameState.player.x));
+
+            // Player bullets update
+            gameState.playerBullets = gameState.playerBullets.filter(bullet => {
+                bullet.y += bullet.vy * deltaTime;
+                return bullet.y > 0;
+            });
+
+            // Enemy movement and shooting/diving
+            gameState.enemyAdvanceTimer += deltaTime;
+            let advanceDown = false;
+            let hitWallThisFrame = false;
+
+            if (gameState.enemyAdvanceTimer >= gameState.enemyAdvanceInterval) {
+                gameState.enemyAdvanceTimer = 0;
+                // Check if enemies hit side walls for group movement
+                for (const enemy of gameState.enemies) {
+                    if (!enemy.isDiving && ((gameState.enemyDirection === 1 && enemy.x + enemy.width / 2 >= canvas.width - 10) ||
+                                            (gameState.enemyDirection === -1 && enemy.x - enemy.width / 2 <= 10))) {
+                        hitWallThisFrame = true;
+                        break;
+                    }
+                }
+
+                if (hitWallThisFrame) {
+                    gameState.enemyDirection *= -1; // Reverse global direction
+                    advanceDown = true; // Signal for all non-diving enemies to move down
+                }
+            }
+
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                const enemy = gameState.enemies[i];
+
+                if (enemy.isDiving) {
+                    // Diving behavior
+                    enemy.y += ENEMY_DIVE_SPEED * deltaTime;
+                    // Move towards dive target X
+                    const dx = enemy.diveTargetX - enemy.x;
+                    if (Math.abs(dx) > 5) { // Only adjust X if not very close
+                        enemy.x += Math.sign(dx) * ENEMY_DIVE_SPEED * 0.5 * deltaTime; // Horizontal chase during dive
+                    }
+                    
+                    // If diving enemy goes below the canvas, reset to top and continue dive
+                    if (enemy.y - enemy.height / 2 > canvas.height) {
+                        enemy.y = -enemy.height / 2; // Reset to just above top
+                        enemy.x = gameState.player.x; // Target player's current X for the new dive
+                        enemy.diveTargetX = gameState.player.x; // Update target for next dive
+                    }
+                } else {
+                    // Normal formation movement
+                    enemy.x += gameState.enemyDirection * ENEMY_NORMAL_SPEED_X * deltaTime;
+                    if (advanceDown) {
+                        enemy.initialY += ENEMY_NORMAL_SPEED_Y; // Update base Y for next oscillation cycle
+                    }
+                    // Apply oscillation based on current time and initial Y
+                    enemy.y = enemy.initialY + Math.sin(currentTimeSeconds * gameState.waveOscillationFrequency + enemy.x / 50) * gameState.waveOscillationAmplitude;
+
+                    // Enemy decision: Dive or Shoot
+                    if (Math.random() < gameState.currentEnemyRamChance) { // Use dynamic ram chance
+                        enemy.isDiving = true;
+                        enemy.diveTargetX = gameState.player.x; // Set target X when dive starts
+                    } else if (Math.random() < gameState.currentEnemyShootChance) { // Use dynamic shoot chance
+                        gameState.enemyBullets.push({
+                            x: enemy.x,
+                            y: enemy.y + enemy.height / 2,
+                            radius: 3,
+                            vy: ENEMY_BULLET_SPEED
+                        });
+                    }
+
+                    // Enemy reaches player's base line - game over (if not already handled by collision)
+                    if (enemy.y + enemy.height / 2 >= canvas.height - gameState.player.height * 2) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+
+
+            // Enemy bullets update
+            gameState.enemyBullets = gameState.enemyBullets.filter(bullet => {
+                bullet.y += bullet.vy * deltaTime;
+                return bullet.y < canvas.height;
+            });
+
+            // Collision detection (Player Bullets vs Enemies)
+            for (let i = gameState.playerBullets.length - 1; i >= 0; i--) {
+                const pBullet = gameState.playerBullets[i];
+                for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+                    const enemy = gameState.enemies[j];
+                    // Simple AABB (Axis-Aligned Bounding Box) collision for rect vs circle approx
+                    const closestX = Math.max(enemy.x - enemy.width / 2, Math.min(pBullet.x, enemy.x + enemy.width / 2));
+                    const closestY = Math.max(enemy.y - enemy.height / 2, Math.min(pBullet.y, enemy.y + pBullet.radius)); 
+                    const dx = pBullet.x - closestX;
+                    const dy = pBullet.y - closestY;
+                    const distanceSq = (dx * dx) + (dy * dy);
+
+                    if (distanceSq < (pBullet.radius * pBullet.radius)) { // Collision detected
+                        gameState.playerBullets.splice(i, 1);
+                        gameState.enemies.splice(j, 1);
+                        gameState.score += 100;
+                        updateGalacticInvadersScoreAndLives();
+                        break; 
+                    }
+                }
+            }
+
+            // Collision detection (Enemy Bullets/Enemies vs Player)
+            // Only check collision if player is not invincible or already destroyed
+            if (!gameState.player.isInvincible && !gameState.player.isDestroyed) {
+                // Enemy Bullets vs Player
+                for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
+                    const eBullet = gameState.enemyBullets[i];
+                    const dx = gameState.player.x - eBullet.x;
+                    const dy = gameState.player.y - eBullet.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < gameState.player.width / 2 + eBullet.radius) { 
+                        gameState.enemyBullets.splice(i, 1); // Remove bullet
+                        handlePlayerHit();
+                        return; // Exit loop after hit
+                    }
+                }
+                // Ramming Enemy collisions with player
+                for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                    const enemy = gameState.enemies[i];
+                    if (enemy.isDiving) { 
+                        const dx = gameState.player.x - enemy.x;
+                        const dy = gameState.player.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2;
+                        const enemyApproxRadius = Math.max(enemy.width, enemy.height) / 2;
+
+                        if (distance < playerApproxRadius + enemyApproxRadius) {
+                            gameState.enemies.splice(i, 1); // Remove enemy on collision
+                            handlePlayerHit();
+                            return; // Exit loop after hit
+                        }
+                    }
+                }
+            }
+
+            // Update explosions
+            for (let i = gameState.explosions.length - 1; i >= 0; i--) {
+                const explosion = gameState.explosions[i];
+                explosion.timer -= deltaTime;
+                if (explosion.timer <= 0) {
+                    gameState.explosions.splice(i, 1);
+                }
+            }
+
+            // Check if all enemies are defeated for next wave
+            if (gameState.enemies.length === 0) {
+                gameState.wave++;
+                spawnEnemyWave();
+            }
+        }
+
+        // New function to handle player getting hit
+        function handlePlayerHit() {
+            gameState.lives--;
+            updateGalacticInvadersScoreAndLives();
+
+            if (gameState.lives <= 0) {
+                gameState.player.isDestroyed = true; // Ensure player is hidden for game over explosion
+                gameState.explosions.push({ x: gameState.player.x, y: gameState.player.y, timer: gameState.explosionDuration });
+                gameOver();
+            } else {
+                gameState.player.isDestroyed = true; // Hide player ship
+                gameState.explosions.push({ x: gameState.player.x, y: gameState.player.y, timer: gameState.explosionDuration });
+                
+                // Set a timeout to respawn the player after the explosion animation
+                setTimeout(() => {
+                    gameState.player.isDestroyed = false; // Make player visible again
+                    gameState.player.x = canvas.width / 2; // Respawn at center
+                    gameState.player.y = canvas.height - 50;
+                    gameState.player.isInvincible = true; // Start invincibility
+                    gameState.player.invincibilityTimer = gameState.player.invincibilityDuration;
+                }, gameState.explosionDuration * 1000); // Convert seconds to milliseconds
+            }
+        }
+
+        function drawGalacticInvaders() {
+            // Player Ship (only draw if not destroyed and handling blinking)
+            if (!gameState.player.isDestroyed) {
+                drawPlayerShip(gameState.player);
+            }
+            
+            // Draw explosions
+            gameState.explosions.forEach(explosion => drawExplosion(explosion, gameState.explosionDuration));
+
+            // Player Bullets
+            ctx.fillStyle = '#00ffff'; // Cyan bullets
+            gameState.playerBullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Enemies
+            gameState.enemies.forEach(enemy => {
+                drawEnemyShip(enemy);
+            });
+
+            // Enemy Bullets
+            ctx.fillStyle = '#ff0041'; // Red bullets
+            gameState.enemyBullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateGalacticInvadersScoreAndLives() {
+            document.getElementById('galacticScoreDisplay').textContent = `Score: ${gameState.score}`;
+            document.getElementById('galacticLivesDisplay').textContent = `Lives: ${gameState.lives}`;
+            document.getElementById('galacticWaveDisplay').textContent = `Wave: ${gameState.wave}`; // Update wave display
+        }
+        // --- End Galactic Invaders Game ---
 
 
         // Initial setup on window load

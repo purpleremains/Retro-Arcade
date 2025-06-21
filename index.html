@@ -581,7 +581,7 @@
             // Stop if no game is selected or if game is not active
             if (!currentGame || !gameActive) return; 
 
-            const deltaTime = (currentTime - lastFrameTime) / 1000;
+            const deltaTime = (currentTime - lastFrameTime) / 1000; // DeltaTime in seconds
             lastFrameTime = currentTime;
 
             // Clear canvas
@@ -1022,7 +1022,10 @@
         function initDino() {
             gameState.dino = {
                 x: 50, y: GROUND_LINE_Y - DINO_HEIGHT_DEFAULT, width: DINO_WIDTH_DEFAULT, height: DINO_HEIGHT_DEFAULT,
-                dy: 0, gravity: 0.35, jumpStrength: -10, isJumping: false, // Adjusted jumpStrength to -10
+                dy: 0, 
+                gravity: 800, // Pixels per second squared
+                jumpStrength: -250, // Initial upward velocity in pixels per second
+                isJumping: false,
                 draw() {
                     if (!ctx) return;
                     ctx.fillStyle = '#00ff41'; ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -1031,15 +1034,16 @@
                     ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2, 0, Math.PI * 2); ctx.fill();
                 },
                 jump() { if (!this.isJumping) { this.dy = this.jumpStrength; this.isJumping = true; } },
-                update() {
-                    this.dy += this.gravity; this.y += this.dy;
+                update(deltaTime) {
+                    this.dy += this.gravity * deltaTime; // Apply gravity over time
+                    this.y += this.dy * deltaTime; // Apply vertical movement over time
                     if (this.y + this.height > GROUND_LINE_Y) { this.y = GROUND_LINE_Y - this.height; this.dy = 0; this.isJumping = false; }
                 }
             };
             gameState.obstacles = [];
-            gameState.gameSpeed = 3; // Slower initial speed
-            gameState.obstacleSpawnTimer = 0;
-            gameState.obstacleSpawnInterval = 2000; // Longer interval for slower game
+            gameState.gameSpeed = 180; // Pixels per second
+            gameState.obstacleSpawnTimer = 0; // In seconds
+            gameState.obstacleSpawnInterval = 2; // In seconds
         }
 
         function createDinoObstacle() {
@@ -1059,21 +1063,23 @@
 
         function updateDino(deltaTime) {
             for (let i = 0; i < gameState.obstacles.length; i++) {
-                gameState.obstacles[i].x -= gameState.gameSpeed;
+                gameState.obstacles[i].x -= gameState.gameSpeed * deltaTime; // Move obstacles by speed * deltaTime
                 const dino = gameState.dino; const obstacle = gameState.obstacles[i];
                 if (dino.x < obstacle.x + obstacle.width && dino.x + dino.width > obstacle.x && dino.y < obstacle.y + obstacle.height && dino.y + dino.height > obstacle.y) {
                     gameOver(); return;
                 }
             }
             gameState.obstacles = gameState.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
-            gameState.obstacleSpawnTimer += deltaTime * 1000;
+            gameState.obstacleSpawnTimer += deltaTime; // Accumulate time
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
                 createDinoObstacle();
                 gameState.obstacleSpawnTimer = 0;
-                gameState.gameSpeed += 0.005; // Slower speed increase
-                gameState.obstacleSpawnInterval = Math.max(1000, gameState.obstacleSpawnInterval - 2); // Slower interval decrease
+                gameState.gameSpeed += 2 * deltaTime; // Increase speed over time (2 pixels/second per second)
+                // Decrease interval over time, clamp at 0.5 seconds
+                gameState.obstacleSpawnInterval = Math.max(0.5, gameState.obstacleSpawnInterval - (0.01 * deltaTime)); 
             }
-            gameState.dino.update(); score++; updateScore();
+            gameState.dino.update(deltaTime); // Pass deltaTime to dino's update
+            score++; updateScore();
         }
 
         function drawDino() {
@@ -1888,7 +1894,7 @@
         const ENEMY_DIVE_SPEED = 200; // Faster vertical speed when diving
         const ENEMY_BULLET_SPEED = 150;
         const ENEMY_BASE_SHOULD_SHOOT_CHANCE = 0.0005; // Per enemy per frame (lower base)
-        const ENEMY_BASE_RAM_CHANCE = 0.00001; // EVEN MORE SIGNIFICANTLY LOWER BASE for ramming
+        const ENEMY_BASE_RAM_CHANCE = 0.00005; // SIGNIFICANTLY INCREASED BASE for ramming (was 0.00001)
 
         function initGalacticInvaders() {
             canvas.width = 600; // Set canvas dimensions for Galactic Invaders

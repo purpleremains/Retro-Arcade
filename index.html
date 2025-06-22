@@ -633,19 +633,13 @@
 
 
             // Calculate available width and height for the canvas
-            // Account for total padding/margin around the canvas and other UI elements
             let usedVerticalSpace = 0;
             let usedHorizontalSpace = 0;
 
-            // Calculate horizontal space
-            // Assuming .container has 20px padding on each side
             usedHorizontalSpace = containerElement.offsetLeft * 2 + 40; // 2 * body-margin + 2 * container-padding
 
-            // Calculate vertical space
-            // Header is outside gameArea
             usedVerticalSpace += headerElement.offsetHeight + parseFloat(getComputedStyle(headerElement).marginBottom);
             
-            // Elements inside gameArea but outside canvas
             if (gameTitleElement.style.display !== 'none') {
                 usedVerticalSpace += gameTitleElement.offsetHeight + parseFloat(getComputedStyle(gameTitleElement).marginBottom);
             }
@@ -664,62 +658,88 @@
             if (pongDifficultySelectionElement.style.display !== 'none') {
                 usedVerticalSpace += pongDifficultySelectionElement.offsetHeight + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginTop) + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginBottom);
             }
-            if (messageBoxElement.style.display !== 'none') { // Message box takes up its own space
-                 // If message box is showing, it's typically an overlay, so its height doesn't directly shrink available canvas space
-                 // unless it's designed as an inline element pushing content. Given its absolute position, its height doesn't affect.
-            }
 
-            // Also account for game-area padding (20px top/bottom) and canvas margins (20px top/bottom)
             usedVerticalSpace += 40 + 40; // game-area padding + canvas margins
 
             const availableWidth = window.innerWidth - usedHorizontalSpace;
             const availableHeight = window.innerHeight - usedVerticalSpace;
 
-            // Define original fixed dimensions for aspect ratio calculations
             const defaultGameOriginalWidth = 600;
             const defaultGameOriginalHeight = 400;
             const giOriginalWidth = 600;
             const giOriginalHeight = 700;
-            const tetrisOriginalWidth = TETRIS_COLS * 20; // 200
-            const tetrisOriginalHeight = TETRIS_ROWS * 20; // 400
-            const minesweeperOriginalWidth = MINESWEEPER_DEFAULT_COLS * 30; // 480
-            const minesweeperOriginalHeight = MINESWEEPER_DEFAULT_ROWS * 30; // 480
+            const tetrisOriginalCols = TETRIS_COLS;
+            const tetrisOriginalRows = TETRIS_ROWS;
+            const minesweeperOriginalCols = MINESWEEPER_DEFAULT_COLS;
+            const minesweeperOriginalRows = MINESWEEPER_DEFAULT_ROWS;
+            
 
             let originalWidth, originalHeight;
+            let newCanvasWidth, newCanvasHeight;
+            let calculatedBlockSize; // For grid-based games
+
             switch (currentGame) {
                 case 'tetris':
-                    originalWidth = tetrisOriginalWidth;
-                    originalHeight = tetrisOriginalHeight;
+                    // Calculate optimal block size based on available space, ensuring integer size
+                    const maxBlockSizeTetrisX = Math.floor(availableWidth / tetrisOriginalCols);
+                    const maxBlockSizeTetrisY = Math.floor(availableHeight / tetrisOriginalRows);
+                    calculatedBlockSize = Math.min(maxBlockSizeTetrisX, maxBlockSizeTetrisY);
+                    calculatedBlockSize = Math.max(10, calculatedBlockSize); // Minimum block size to ensure visibility
+
+                    newCanvasWidth = calculatedBlockSize * tetrisOriginalCols;
+                    newCanvasHeight = calculatedBlockSize * tetrisOriginalRows;
+                    // For Tetris, the "original" aspect ratio is implicitly defined by cols/rows and a uniform block size
+                    originalWidth = newCanvasWidth; // Use the calculated dimensions as the target
+                    originalHeight = newCanvasHeight;
                     break;
+
                 case 'minesweeper':
-                    originalWidth = minesweeperOriginalWidth;
-                    originalHeight = minesweeperOriginalHeight;
+                    // Calculate optimal cell size based on available space, ensuring integer size
+                    const maxCellSizeMinesweeperX = Math.floor(availableWidth / minesweeperOriginalCols);
+                    const maxCellSizeMinesweeperY = Math.floor(availableHeight / minesweeperOriginalRows);
+                    calculatedBlockSize = Math.min(maxCellSizeMinesweeperX, maxCellSizeMinesweeperY);
+                    calculatedBlockSize = Math.max(10, calculatedBlockSize); // Minimum cell size
+
+                    newCanvasWidth = calculatedBlockSize * minesweeperOriginalCols;
+                    newCanvasHeight = calculatedBlockSize * minesweeperOriginalRows;
+                    // For Minesweeper, the "original" aspect ratio is implicitly defined by cols/rows and a uniform cell size
+                    originalWidth = newCanvasWidth; // Use the calculated dimensions as the target
+                    originalHeight = newCanvasHeight;
                     break;
+
                 case 'galacticInvaders':
                     originalWidth = giOriginalWidth;
                     originalHeight = giOriginalHeight;
+                    const giAspectRatio = originalWidth / originalHeight;
+
+                    const giCalculatedWidthBasedOnHeight = availableHeight * giAspectRatio;
+                    const giCalculatedHeightBasedOnWidth = availableWidth / giAspectRatio;
+
+                    if (giCalculatedWidthBasedOnHeight <= availableWidth) {
+                        newCanvasWidth = giCalculatedWidthBasedOnHeight;
+                        newCanvasHeight = availableHeight;
+                    } else {
+                        newCanvasWidth = availableWidth;
+                        newCanvasHeight = giCalculatedHeightBasedOnWidth;
+                    }
                     break;
+
                 default: // For Pong, Dino, Snake, Asteroids, Breakout
                     originalWidth = defaultGameOriginalWidth;
                     originalHeight = defaultGameOriginalHeight;
+                    const defaultAspectRatio = originalWidth / originalHeight;
+
+                    const defaultCalculatedWidthBasedOnHeight = availableHeight * defaultAspectRatio;
+                    const defaultCalculatedHeightBasedOnWidth = availableWidth / defaultAspectRatio;
+
+                    if (defaultCalculatedWidthBasedOnHeight <= availableWidth) {
+                        newCanvasWidth = defaultCalculatedWidthBasedOnHeight;
+                        newCanvasHeight = availableHeight;
+                    } else {
+                        newCanvasWidth = availableWidth;
+                        newCanvasHeight = defaultCalculatedHeightBasedOnWidth;
+                    }
                     break;
-            }
-
-            const aspectRatio = originalWidth / originalHeight;
-
-            let newCanvasWidth, newCanvasHeight;
-
-            const calculatedWidthBasedOnHeight = availableHeight * aspectRatio;
-            const calculatedHeightBasedOnWidth = availableWidth / aspectRatio;
-
-            if (calculatedWidthBasedOnHeight <= availableWidth) {
-                // If fitting by height means it also fits by width, prioritize maximizing height
-                newCanvasWidth = calculatedWidthBasedOnHeight;
-                newCanvasHeight = availableHeight;
-            } else {
-                // Otherwise, width is the limiting factor, fit by width
-                newCanvasWidth = availableWidth;
-                newCanvasHeight = calculatedHeightBasedOnWidth;
             }
 
             // Store old dimensions before applying new ones to canvas
@@ -732,14 +752,13 @@
 
             // Update game-specific global sizes for drawing/logic based on new canvas size
             if (currentGame === 'tetris') {
-                window.TETRIS_BLOCK_SIZE = Math.floor(canvas.width / TETRIS_COLS);
+                window.TETRIS_BLOCK_SIZE = calculatedBlockSize; // Use the calculated integer block size
             } else if (currentGame === 'minesweeper') {
-                window.MINE_CELL_SIZE = Math.floor(canvas.width / gameState.cols);
+                window.MINE_CELL_SIZE = calculatedBlockSize; // Use the calculated integer cell size
             }
 
             // Ensure `previousCanvasWidth/Height` are initialized on first run or updated on subsequent runs
             if (previousCanvasWidth === 0 || previousCanvasHeight === 0 || isNaN(oldCanvasWidth) || isNaN(oldCanvasHeight) || oldCanvasWidth === 0 || oldCanvasHeight === 0) {
-                // First run or coming from menu or invalid old dimensions: just set previous to current
                 previousCanvasWidth = canvas.width;
                 previousCanvasHeight = canvas.height;
             } else if (canvas.width !== oldCanvasWidth || canvas.height !== oldCanvasHeight) {
@@ -747,7 +766,7 @@
                 const scaleX = canvas.width / oldCanvasWidth;
                 const scaleY = canvas.height / oldCanvasHeight;
 
-                if (gameActive && gameState) { // Only scale if a game is actively running
+                if (gameActive && gameState) {
                     switch (currentGame) {
                         case 'dino':
                             if (gameState.dino) {
@@ -877,20 +896,28 @@
                             });
                             gameState.waveOscillationAmplitude *= scaleY;
                             break;
+                        case 'tetris':
+                            // For Tetris, the pieces and board are based on block size, which is recalculated.
+                            // We need to re-center the current piece on the new scaled board.
+                            if (gameState.currentPiece) {
+                                gameState.pieceX = Math.floor(TETRIS_COLS / 2) - Math.floor(gameState.currentPiece[0].length / 2);
+                                // Y might need adjustment if canvas height changed drastically, but generally starts at 0
+                            }
+                            // No need to scale individual block positions as they are relative to grid coordinates * BLOCK_SIZE
+                            break;
+                        case 'minesweeper':
+                            // For Minesweeper, cells are also based on MINE_CELL_SIZE, which is recalculated.
+                            // No individual scaling needed as positions are grid-based.
+                            break;
                     }
                 }
-                // Update previous dimensions AFTER scaling is applied
                 previousCanvasWidth = canvas.width;
                 previousCanvasHeight = canvas.height;
             }
             
             // Force a redraw if game is active, regardless of whether scaling happened or not
-            // This is important because CSS changes (like the parent container resizing) might happen
-            // without the internal canvas.width/height attributes necessarily changing,
-            // but the actual drawn content needs to be refreshed to match the new display size.
             if (gameActive && ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear
-                // Redraw based on the current game state and canvas size
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 switch(currentGame) {
                     case 'dino': drawDino(); break;
                     case 'snake': drawSnake(); break;
@@ -1485,7 +1512,8 @@
             const scaleFactorX = canvas.width / 600;
             const scaleFactorY = canvas.height / 400;
 
-            let initialBallSpeed = 280 * scaleFactorX; // Default for easy, scaled by width
+            // Increased base speed for easy difficulty
+            let initialBallSpeed = 350 * scaleFactorX; // Default for easy, scaled by width
             if (difficulty === 'hard') {
                 initialBallSpeed = 415 * scaleFactorX; // Adjusted speed for hard difficulty, scaled by width
             }
@@ -1493,7 +1521,11 @@
             const randomXDir = Math.random() < 0.5 ? 1 : -1;
             const randomYDir = Math.random() < 0.5 ? 1 : -1;
             let aiPaddleSpeed;
-            if (difficulty === 'easy') { aiPaddleSpeed = 220 * scaleFactorY; } else { aiPaddleSpeed = 350 * scaleFactorY; } // Scaled by height
+            if (difficulty === 'easy') { 
+                aiPaddleSpeed = 250 * scaleFactorY; // Slightly increased AI speed for easy
+            } else { 
+                aiPaddleSpeed = 350 * scaleFactorY; 
+            } // Scaled by height
             
             gameState = {
                 ...gameState,
@@ -2408,54 +2440,79 @@
             updateGalacticInvadersScoreAndLives(); // Initialize UI
         }
 
-        // Draw Player Ship (more detailed)
+        // Draw Player Ship (more detailed, Galaga-inspired)
         function drawPlayerShip(player) {
             const currentTimeSeconds = performance.now() / 1000;
             if (player.isInvincible && Math.floor(currentTimeSeconds / player.blinkInterval) % 2 === 0) {
-                return;
+                return; // Don't draw if blinking during invincibility
             }
 
-            const scaleX = canvas.width / 600;
-            const scaleY = canvas.height / 700;
+            const scaleX = player.width / GI_ORIGINAL_PLAYER_WIDTH;
+            const scaleY = player.height / GI_ORIGINAL_PLAYER_HEIGHT;
 
-            ctx.fillStyle = '#00ff41';
-            ctx.strokeStyle = '#00cc00';
+            const basePlayerX = player.x;
+            const basePlayerY = player.y;
+
+            ctx.save(); // Save the current canvas state
+            ctx.translate(basePlayerX, basePlayerY); // Move origin to ship's center for drawing
+
+            // Main Body (triangle pointing up, with a wider base)
+            ctx.fillStyle = '#00ff41'; // Green for the main body
+            ctx.strokeStyle = '#00aa00'; // Darker green outline
             ctx.lineWidth = 2 * Math.min(scaleX, scaleY);
-
             ctx.beginPath();
-            ctx.moveTo(player.x, player.y - player.height * 0.5); // Top point relative to player.y (center-ish)
-            ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2);
-            ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2);
+            ctx.moveTo(0, -10 * scaleY); // Top point
+            ctx.lineTo(-20 * scaleX, 10 * scaleY); // Bottom-left
+            ctx.lineTo(20 * scaleX, 10 * scaleY); // Bottom-right
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = '#00ffff';
-            ctx.fillRect(player.x - player.width / 8, player.y - player.height * 0.4, player.width / 4, player.height / 3);
+            // Cockpit (small rectangle on top of the main body)
+            ctx.fillStyle = '#00ffff'; // Cyan for cockpit
             ctx.strokeStyle = '#00aaaa';
-            ctx.strokeRect(player.x - player.width / 8, player.y - player.height * 0.4, player.width / 4, player.height / 3);
-
-            ctx.fillStyle = '#88ff88';
             ctx.beginPath();
-            ctx.moveTo(player.x - player.width / 2, player.y + player.height / 2);
-            ctx.lineTo(player.x - player.width / 2 - (10 * scaleX), player.y + player.height / 2);
-            ctx.lineTo(player.x - player.width / 2, player.y - (5 * scaleY)); // Adjusted for a better wing shape
+            ctx.rect(-5 * scaleX, -10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.fill();
+            ctx.stroke();
+
+            // Left Wing
+            ctx.fillStyle = '#ff0041'; // Red for wings
+            ctx.strokeStyle = '#aa0022';
+            ctx.beginPath();
+            ctx.moveTo(-20 * scaleX, 10 * scaleY); // Connects to main body
+            ctx.lineTo(-30 * scaleX, 5 * scaleY);
+            ctx.lineTo(-30 * scaleX, 15 * scaleY);
+            ctx.lineTo(-20 * scaleX, 15 * scaleY);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
+            // Right Wing
+            ctx.fillStyle = '#ff0041'; // Red for wings
+            ctx.strokeStyle = '#aa0022';
             ctx.beginPath();
-            ctx.moveTo(player.x + player.width / 2, player.y + player.height / 2);
-            ctx.lineTo(player.x + player.width / 2 + (10 * scaleX), player.y + player.height / 2);
-            ctx.lineTo(player.x + player.width / 2, player.y - (5 * scaleY));
+            ctx.moveTo(20 * scaleX, 10 * scaleY); // Connects to main body
+            ctx.lineTo(30 * scaleX, 5 * scaleY);
+            ctx.lineTo(30 * scaleX, 15 * scaleY);
+            ctx.lineTo(20 * scaleX, 15 * scaleY);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = '#ff8800';
-            ctx.fillRect(player.x - player.width / 4, player.y + player.height / 2, player.width / 8, 5 * scaleY);
-            ctx.fillRect(player.x + player.width / 8, player.y + player.height / 2, player.width / 8, 5 * scaleY);
+            // Thrusters (small rectangles at the very bottom)
+            ctx.fillStyle = '#ffa500'; // Orange for thruster glow
+            ctx.beginPath();
+            ctx.rect(-15 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.rect(5 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.fill();
+            ctx.strokeStyle = '#cc8800';
+            ctx.strokeRect(-15 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.strokeRect(5 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+
+            ctx.restore(); // Restore the canvas state
         }
+
 
         // Draw Enemy Ship (more detailed)
         function drawEnemyShip(enemy) {

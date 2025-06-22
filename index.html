@@ -363,7 +363,27 @@
             transform: translate(-50%, -50%);
             z-index: 1000;
             max-width: 80%;
+            box-sizing: border-box; /* Include padding in max-width calculation */
         }
+        /* Style for the "Start Game" / "OK" button within the message box */
+        #messageBoxOkBtn {
+            margin-top: 20px; /* Add some space above the button */
+            padding: 15px 30px; /* Make it bigger */
+            font-size: 1.2rem; /* Increase font size */
+            background: linear-gradient(45deg, #00ff41, #00ffff);
+            border: none;
+            border-radius: 25px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        #messageBoxOkBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.5);
+        }
+
 
         /* Galactic Invaders Specific Styles */
         .galactic-invaders-info {
@@ -518,6 +538,7 @@
         let previousCanvasWidth = 0;
         let previousCanvasHeight = 0;
 
+
         // --- Keyboard Input Tracking (Centralized) ---
         const keysPressed = new Set(); // Tracks which keys are currently held down
 
@@ -671,7 +692,7 @@
             const tetrisOriginalCols = TETRIS_COLS;
             const tetrisOriginalRows = TETRIS_ROWS;
             const minesweeperOriginalCols = MINESWEEPER_DEFAULT_COLS;
-            const minesweeperOriginalRows = MINESWEEPER_DEFAULT_ROWS;
+            const minesweeperOriginalRows = MINESWEEPER_DEFAULT_ROWS; 
             
 
             let originalWidth, originalHeight;
@@ -2377,7 +2398,7 @@
         // --- Galactic Invaders Game ---
         // Original constants for scaling reference
         const GI_ORIGINAL_PLAYER_WIDTH = 40;
-        const GI_ORIGINAL_PLAYER_HEIGHT = 20;
+        const GI_ORIGINAL_PLAYER_HEIGHT = 40; // Adjusted original height to better fit the image
         const GI_ORIGINAL_PLAYER_Y_OFFSET = 50; // Distance from bottom
         const GI_ORIGINAL_PLAYER_BULLET_RADIUS = 3;
         const GI_ORIGINAL_ENEMY_WIDTH = 30;
@@ -2440,7 +2461,7 @@
             updateGalacticInvadersScoreAndLives(); // Initialize UI
         }
 
-        // Draw Player Ship (more detailed, Galaga-inspired)
+        // Draw Player Ship (original shapes)
         function drawPlayerShip(player) {
             const currentTimeSeconds = performance.now() / 1000;
             if (player.isInvincible && Math.floor(currentTimeSeconds / player.blinkInterval) % 2 === 0) {
@@ -2766,7 +2787,8 @@
                     const dy = gameState.player.y - eBullet.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2;
+                    // Adjusted player collision radius for the new ship shape (more approximate)
+                    const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2 * 0.8; 
                     const eBulletHitRadius = playerApproxRadius + eBullet.radius;
                     if (distance < eBulletHitRadius) { 
                         gameState.enemyBullets.splice(i, 1);
@@ -2781,7 +2803,7 @@
                         const dy = gameState.player.y - enemy.y;
                         const distance = Math.sqrt(dx * dx + dy * dy);
 
-                        const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2;
+                        const playerApproxRadius = Math.max(gameState.player.width, gameState.player.height) / 2 * 0.8;
                         const enemyApproxRadius = Math.max(enemy.width, enemy.height) / 2;
 
                         if (distance < playerApproxRadius + enemyApproxRadius) {

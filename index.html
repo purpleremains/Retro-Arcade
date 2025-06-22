@@ -148,30 +148,25 @@
             box-shadow: 0 5px 15px rgba(0, 255, 65, 0.5);
         }
         .game-area {
-            display: none;
+            display: none; /* Initially hidden, now controlled more strictly by JS */
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #00ff41;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
             text-align: center;
-            width: 100%; /* Allows it to take full width */
-            /* max-width removed to allow full expansion */
+            width: 100%;
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); 
-            display: flex; /* Use flexbox to center content */
-            flex-direction: column;
+            flex-direction: column; /* Still flex container for its children */
             align-items: center;
         }
         .game-canvas {
+            display: none; /* Initially hidden, JS will set to block/flex */
             border: 2px solid #00ffff;
             border-radius: 10px;
             background: #000;
-            margin: 20px auto;
-            display: block;
-            width: 100%; /* Take full width of its parent (game-area) */
-            height: auto; /* Maintain aspect ratio based on width */
+            margin: 20px auto; /* Centering and spacing */
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
-            /* Removed min-width to allow full responsiveness */
         }
 
         .game-controls {
@@ -197,17 +192,19 @@
         }
 
         .score {
+            display: none; /* Initially hidden */
             font-size: 1.3rem;
             margin: 10px 0;
             color: #00ffff;
+            margin-left: 25px;
         }
         /* Minesweeper specific controls for flags/timer */
         #minesweeperInfo {
-            display: flex;
+            display: none; /* Initially hidden */
             justify-content: space-between;
             width: 100%;
-            min-width: 300px; /* Ensure a minimum width for info bar */
-            max-width: 600px; /* Limit to canvas width */
+            min-width: 300px;
+            max-width: 600px;
             margin-top: 10px;
             color: #00ffff;
             font-size: 1.1rem;
@@ -224,7 +221,7 @@
             text-align: center;
             max-width: 400px;
             width: 100%;
-            display: none;
+            /* display: none; */ /* Now controlled by JS explicitly */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -258,6 +255,7 @@
 
 
         .action-buttons {
+            /* display: none; */ /* Initially hidden, now controlled by JS explicitly */
             margin-top: 15px;
             display: flex;
             justify-content: center;
@@ -378,25 +376,31 @@
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.5); /* Add initial shadow */
         }
         #messageBoxOkBtn:hover {
             transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.5);
+            box-shadow: 0 8px 20px rgba(0, 255, 65, 0.7); /* Enhance shadow on hover */
         }
 
-
-        /* Galactic Invaders Specific Styles */
-        .galactic-invaders-info {
-            display: flex;
-            justify-content: space-between;
+        /* Styling for the Galactic Invaders info bar */
+        #galacticInvadersInfo {
+            display: none; /* Initially hidden */
+            justify-content: space-around; /* Distribute items evenly */
             width: 100%;
-            min-width: 300px; /* Ensure a minimum width for info bar */
-            max-width: 600px; /* Limit to canvas width */
+            min-width: 300px;
+            max-width: 600px;
             margin-top: 10px;
-            color: #00ff41;
+            color: #00ffff;
             font-size: 1.1rem;
             margin-left: auto;
             margin-right: auto;
+        }
+        #galacticInvadersInfo span {
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff41;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -445,13 +449,18 @@
                 <p class="game-description">Clear the minefield without detonating any hidden mines! Click to reveal a square; if a number appears, it tells you how many mines are adjacent. Right-click (or Ctrl+Click) to flag suspected mine locations. Reveal all non-mine squares to win!</p>
                 <button class="play-btn">Play Now</button>
             </div>
-            <!-- NEW GALAGA-LIKE GAME CARD -->
             <div class="game-card" onclick="startGame('galacticInvaders')">
                 <h3 class="game-title">🚀 Galactic Invaders</h3>
                 <p class="game-description">Defend your galaxy from waves of alien invaders! Move your ship left and right, and fire lasers to destroy them. Don't let them reach the bottom!</p>
                 <button class="play-btn">Play Now</button>
             </div>
-            <!-- END NEW GALAGA-LIKE GAME CARD -->
+            <!-- NEW FLAPPY BIRD GAME CARD -->
+            <div class="game-card" onclick="startGame('flappyBird')">
+                <h3 class="game-title">🐦 Flappy Flight</h3>
+                <p class="game-description">Guide the bird through a treacherous landscape of pipes! Press **SPACEBAR** to flap your wings and avoid obstacles. How far can you fly?</p>
+                <button class="play-btn">Play Now</button>
+            </div>
+            <!-- END NEW FLAPPY BIRD GAME CARD -->
         </div>
 
         <div id="gameArea" class="game-area">
@@ -460,13 +469,13 @@
             <div class="score" id="scoreDisplay">Score: 0</div> 
 
             <!-- Minesweeper specific info display -->
-            <div id="minesweeperInfo" style="display: none;">
+            <div id="minesweeperInfo">
                 <span id="mineCountDisplay">Mines: 0</span>
                 <span id="timerDisplay">Time: 0s</span>
             </div>
 
             <!-- Galactic Invaders specific info display -->
-            <div id="galacticInvadersInfo" class="galactic-invaders-info" style="display: none;">
+            <div id="galacticInvadersInfo">
                 <span id="galacticScoreDisplay">Score: 0</span>
                 <span id="galacticLivesDisplay">Lives: 3</span>
                 <span id="galacticWaveDisplay">Wave: 1</span>
@@ -510,6 +519,11 @@
     </div>
 
     <script>
+        // Define global constants for original canvas dimensions
+        // These are assumed based on the scaling ratios used in your code (e.g., /600, /400)
+        const ORIGINAL_CANVAS_WIDTH = 600;
+        const ORIGINAL_CANVAS_HEIGHT = 400;
+
         // Create animated stars background
         function createStars() {
             const starsContainer = document.getElementById('stars');
@@ -529,14 +543,123 @@
         let animationFrameId = null; // Stores the requestAnimationFrame ID for the active game
         let canvas, ctx; // Main canvas and context
 
-        let score = 0;
+        let score = 0; // General score for games that only have one
         let gameState = {}; // Holds game-specific variables for the current game
 
         let gameActive = false; // Global flag to control game loop
 
         // Global variables for tracking previous canvas size for scaling active game elements
+        // These track the size *after* the previous successful resize/initialization.
         let previousCanvasWidth = 0;
         let previousCanvasHeight = 0;
+
+        // Get references to message box elements early to ensure they are defined
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageBoxOkBtn = document.getElementById('messageBoxOkBtn');
+
+        // New helper function to reset canvas dimensions and display
+        function resetCanvasDimensions() {
+            if (canvas) {
+                // Set internal canvas resolution to a reasonable default for initial calculations.
+                // The actual desired resolution will be set by resizeCanvas() later.
+                canvas.width = ORIGINAL_CANVAS_WIDTH; 
+                canvas.height = ORIGINAL_CANVAS_HEIGHT;
+
+                // Reset CSS dimensions to allow flexbox/auto sizing to correctly calculate
+                // available space before resizeCanvas sets explicit pixel sizes.
+                canvas.style.width = ''; // Clear explicit width
+                canvas.style.height = ''; // Clear explicit height
+                canvas.style.display = 'none'; // Ensure it's initially hidden for proper measurement later
+            }
+        }
+
+        // New function to handle starting game from the overlay's "Start Game" button
+        function startGameFromOverlay() {
+            messageBox.style.display = 'none';
+            gameActive = true;
+            
+            // Explicitly show game area and relevant UI elements AFTER 'Start Game' clicked
+            document.getElementById('gameArea').style.display = 'flex'; 
+            document.getElementById('gameTitle').style.display = 'block';
+            document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
+            document.getElementById('restartGameButton').style.display = 'block';
+            document.querySelector('.action-buttons').style.display = 'flex';
+
+            // Show game-specific info bars
+            if (currentGame === 'minesweeper') {
+                document.getElementById('minesweeperInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Ensure generic score is hidden
+                document.getElementById('galacticInvadersInfo').style.display = 'none'; // Ensure GI score is hidden
+                canvas.addEventListener('click', handleMinesweeperClick);
+                canvas.addEventListener('contextmenu', handleMinesweeperRightClick);
+            } else if (currentGame === 'galacticInvaders') {
+                document.getElementById('galacticInvadersInfo').style.display = 'flex';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Ensure generic score is hidden
+                document.getElementById('minesweeperInfo').style.display = 'none'; // Ensure MS score is hidden
+                updateGalacticInvadersScoreAndLives();
+            } else { // All other games use generic score
+                document.getElementById('minesweeperInfo').style.display = 'none';
+                document.getElementById('galacticInvadersInfo').style.display = 'none';
+                document.getElementById('scoreDisplay').style.display = 'block';
+                updateScore(); // Ensure score is updated for single-score games
+            }
+
+            // NOW, with all relevant UI elements visible, resize the canvas
+            // This call will set canvas.width/height to the correct dimensions for the game's aspect ratio.
+            resizeCanvas();
+            canvas.style.display = 'block'; // Make canvas visible after sizing
+
+            // *** CRITICAL FIX: Re-position player ship for Galactic Invaders after canvas resize ***
+            if (currentGame === 'galacticInvaders' && gameState.player) {
+                const gameScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
+                // Position player such that the bottom of its drawn shape (which extends 15*scale below player.y)
+                // is GI_PLAYER_Y_OFFSET * gameScale pixels from the canvas bottom.
+                gameState.player.y = canvas.height - (GI_PLAYER_Y_OFFSET * gameScale) - (GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * gameScale); 
+                gameState.player.x = canvas.width / 2; // Also recenter
+            }
+            // *** END CRITICAL FIX ***
+
+            setupControls(currentGame);
+            lastFrameTime = performance.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Modified showMessage to distinguish start overlay messages
+        function showMessage(msg, isStartOverlay = false) {
+            messageText.innerHTML = msg;
+            
+            if (isStartOverlay) {
+                messageBoxOkBtn.textContent = 'Start Game';
+                messageBoxOkBtn.onclick = startGameFromOverlay; // Attach specific start function
+            } else { // Regular in-game message
+                messageBoxOkBtn.textContent = 'OK';
+                messageBoxOkBtn.onclick = hideMessage;
+            }
+            messageBox.style.display = 'block'; // This makes the message box visible
+            gameActive = false; // Pause game logic
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId); // Ensure loop stops when message is shown
+                animationFrameId = null;
+            }
+        }
+        
+        // hideMessage function
+        function hideMessage() {
+            messageBox.style.display = 'none';
+            // Reset messageBoxOkBtn's onclick in case it was modified for a start overlay
+            messageBoxOkBtn.onclick = hideMessage;
+            messageBoxOkBtn.textContent = 'OK'; 
+
+            gameActive = true; // Resume/start game logic
+            
+            // This hideMessage is primarily for non-start message boxes.
+            // If it happens to be called after a start message, it just resumes the loop.
+            // The canvas and other elements are made visible by startGameFromOverlay/startSelectedPongDifficulty.
+            
+            lastFrameTime = performance.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
 
 
         // --- Keyboard Input Tracking (Centralized) ---
@@ -597,6 +720,15 @@
                             firePlayerBullet();
                         }
                         break;
+                    case 'flappyBird':
+                        if (lowerKey === ' ' && !gameState.isGameOver && !gameState.gameStarted) {
+                            // First flap starts the game
+                            gameState.gameStarted = true;
+                        }
+                        if (lowerKey === ' ' && !gameState.isGameOver && gameState.gameStarted) {
+                            flapBird();
+                        }
+                        break;
                 }
             }
         });
@@ -628,6 +760,7 @@
                 case 'tetris': updateTetris(deltaTime); drawTetris(); break;
                 case 'minesweeper': updateMinesweeper(deltaTime); drawMinesweeper(); break;
                 case 'galacticInvaders': updateGalacticInvaders(deltaTime); drawGalacticInvaders(); break;
+                case 'flappyBird': updateFlappyBird(deltaTime); drawFlappyBird(); break;
             }
 
             // Continue the loop only if game is active and not showing a message or game over screen
@@ -642,134 +775,139 @@
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
 
-            const containerElement = document.querySelector('.container');
-            const headerElement = document.getElementById('mainHeader');
-            const gameTitleElement = document.getElementById('gameTitle');
-            const scoreDisplayElement = document.getElementById('scoreDisplay');
-            const minesweeperInfoElement = document.getElementById('minesweeperInfo');
-            const galacticInvadersInfoElement = document.getElementById('galacticInvadersInfo');
-            const actionButtonsElement = document.querySelector('.action-buttons');
-            const pongDifficultySelectionElement = document.getElementById('pongDifficultySelection');
-            const messageBoxElement = document.getElementById('messageBox');
+            const gameAreaElement = document.getElementById('gameArea');
 
+            // Temporarily set canvas display to block to ensure it's part of the layout for clientWidth/Height calculations of its parent.
+            // Store original display to restore it later if needed (e.g., if canvas was hidden before this call).
+            // This is crucial for getting accurate clientWidth/Height from gameAreaElement
+            const originalCanvasDisplay = canvas.style.display;
+            canvas.style.display = 'block'; 
 
-            // Calculate available width and height for the canvas
-            let usedVerticalSpace = 0;
-            let usedHorizontalSpace = 0;
+            // Get the current calculated dimensions of the game area container
+            // These will reflect the space *after* other UI elements are shown/hidden.
+            let availableWidth = gameAreaElement.clientWidth;
+            let availableHeight = gameAreaElement.clientHeight;
 
-            usedHorizontalSpace = containerElement.offsetLeft * 2 + 40; // 2 * body-margin + 2 * container-padding
+            // Subtract heights of elements that are *siblings* to the canvas within gameArea
+            // and positioned vertically (due to flex-direction: column).
+            const elementsToSubtractHeight = [
+                document.getElementById('gameTitle'),
+                document.getElementById('scoreDisplay'),
+                document.getElementById('minesweeperInfo'),
+                document.getElementById('galacticInvadersInfo'),
+                // document.getElementById('pongDifficultySelection'), // This should be hidden when canvas is shown
+                document.querySelector('.action-buttons')
+            ];
 
-            usedVerticalSpace += headerElement.offsetHeight + parseFloat(getComputedStyle(headerElement).marginBottom);
-            
-            if (gameTitleElement.style.display !== 'none') {
-                usedVerticalSpace += gameTitleElement.offsetHeight + parseFloat(getComputedStyle(gameTitleElement).marginBottom);
+            elementsToSubtractHeight.forEach(el => {
+                // Only subtract if the element is currently visible (not display:none)
+                if (el && getComputedStyle(el).display !== 'none') {
+                    availableHeight -= el.offsetHeight;
+                    availableHeight -= parseFloat(getComputedStyle(el).marginTop) || 0;
+                    availableHeight -= parseFloat(getComputedStyle(el).marginBottom) || 0;
+                }
+            });
+
+            // If pong difficulty is visible, also subtract its height
+            const pongDifficultySection = document.getElementById('pongDifficultySelection');
+            if (pongDifficultySection && pongDifficultySection.style.display !== 'none') {
+                 availableHeight -= pongDifficultySection.offsetHeight;
+                 availableHeight -= parseFloat(getComputedStyle(pongDifficultySection).marginTop) || 0;
+                 availableHeight -= parseFloat(getComputedStyle(pongDifficultySection).marginBottom) || 0;
             }
-            if (scoreDisplayElement.style.display !== 'none') {
-                usedVerticalSpace += scoreDisplayElement.offsetHeight + parseFloat(getComputedStyle(scoreDisplayElement).marginBottom);
-            }
-            if (minesweeperInfoElement.style.display !== 'none') {
-                usedVerticalSpace += minesweeperInfoElement.offsetHeight + parseFloat(getComputedStyle(minesweeperInfoElement).marginBottom);
-            }
-            if (galacticInvadersInfoElement.style.display !== 'none') {
-                usedVerticalSpace += galacticInvadersInfoElement.offsetHeight + parseFloat(getComputedStyle(galacticInvadersInfoElement).marginBottom);
-            }
-            if (actionButtonsElement.style.display !== 'none') {
-                usedVerticalSpace += actionButtonsElement.offsetHeight + parseFloat(getComputedStyle(actionButtonsElement).marginTop);
-            }
-            if (pongDifficultySelectionElement.style.display !== 'none') {
-                usedVerticalSpace += pongDifficultySelectionElement.offsetHeight + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginTop) + parseFloat(getComputedStyle(pongDifficultySelectionElement).marginBottom);
-            }
 
-            usedVerticalSpace += 40 + 40; // game-area padding + canvas margins
 
-            const availableWidth = window.innerWidth - usedHorizontalSpace;
-            const availableHeight = window.innerHeight - usedVerticalSpace;
+            // Subtract canvas's own vertical margins
+            availableHeight -= parseFloat(getComputedStyle(canvas).marginTop) || 0;
+            availableHeight -= parseFloat(getComputedStyle(canvas).marginBottom) || 0;
 
-            const defaultGameOriginalWidth = 600;
-            const defaultGameOriginalHeight = 400;
+            // Ensure available dimensions are positive
+            availableWidth = Math.max(10, availableWidth);
+            availableHeight = Math.max(10, availableHeight);
+
+            // Define target resolution for each game to maintain aspect ratio
             const giOriginalWidth = 600;
             const giOriginalHeight = 700;
+            const fbOriginalWidth = 600;
+            const fbOriginalHeight = 400;
             const tetrisOriginalCols = TETRIS_COLS;
             const tetrisOriginalRows = TETRIS_ROWS;
             const minesweeperOriginalCols = MINESWEEPER_DEFAULT_COLS;
-            const minesweeperOriginalRows = MINESWEEPER_DEFAULT_ROWS; 
-            
+            const minesweeperOriginalRows = MINESWEEPER_DEFAULT_ROWS;
 
-            let originalWidth, originalHeight;
-            let newCanvasWidth, newCanvasHeight;
+            let targetWidth, targetHeight;
             let calculatedBlockSize; // For grid-based games
 
             switch (currentGame) {
                 case 'tetris':
-                    // Calculate optimal block size based on available space, ensuring integer size
                     const maxBlockSizeTetrisX = Math.floor(availableWidth / tetrisOriginalCols);
                     const maxBlockSizeTetrisY = Math.floor(availableHeight / tetrisOriginalRows);
                     calculatedBlockSize = Math.min(maxBlockSizeTetrisX, maxBlockSizeTetrisY);
                     calculatedBlockSize = Math.max(10, calculatedBlockSize); // Minimum block size to ensure visibility
 
-                    newCanvasWidth = calculatedBlockSize * tetrisOriginalCols;
-                    newCanvasHeight = calculatedBlockSize * tetrisOriginalRows;
-                    // For Tetris, the "original" aspect ratio is implicitly defined by cols/rows and a uniform block size
-                    originalWidth = newCanvasWidth; // Use the calculated dimensions as the target
-                    originalHeight = newCanvasHeight;
+                    targetWidth = calculatedBlockSize * tetrisOriginalCols;
+                    targetHeight = calculatedBlockSize * tetrisOriginalRows;
                     break;
 
                 case 'minesweeper':
-                    // Calculate optimal cell size based on available space, ensuring integer size
                     const maxCellSizeMinesweeperX = Math.floor(availableWidth / minesweeperOriginalCols);
                     const maxCellSizeMinesweeperY = Math.floor(availableHeight / minesweeperOriginalRows);
                     calculatedBlockSize = Math.min(maxCellSizeMinesweeperX, maxCellSizeMinesweeperY);
                     calculatedBlockSize = Math.max(10, calculatedBlockSize); // Minimum cell size
 
-                    newCanvasWidth = calculatedBlockSize * minesweeperOriginalCols;
-                    newCanvasHeight = calculatedBlockSize * minesweeperOriginalRows;
-                    // For Minesweeper, the "original" aspect ratio is implicitly defined by cols/rows and a uniform cell size
-                    originalWidth = newCanvasWidth; // Use the calculated dimensions as the target
-                    originalHeight = newCanvasHeight;
+                    targetWidth = calculatedBlockSize * minesweeperOriginalCols;
+                    targetHeight = calculatedBlockSize * minesweeperOriginalRows;
                     break;
 
                 case 'galacticInvaders':
-                    originalWidth = giOriginalWidth;
-                    originalHeight = giOriginalHeight;
-                    const giAspectRatio = originalWidth / originalHeight;
-
-                    const giCalculatedWidthBasedOnHeight = availableHeight * giAspectRatio;
-                    const giCalculatedHeightBasedOnWidth = availableWidth / giAspectRatio;
-
-                    if (giCalculatedWidthBasedOnHeight <= availableWidth) {
-                        newCanvasWidth = giCalculatedWidthBasedOnHeight;
-                        newCanvasHeight = availableHeight;
+                    const giAspectRatio = giOriginalWidth / giOriginalHeight;
+                    // Prioritize fitting width or height based on which is more constrained
+                    if (availableWidth / giAspectRatio <= availableHeight) {
+                        targetWidth = availableWidth;
+                        targetHeight = availableWidth / giAspectRatio;
                     } else {
-                        newCanvasWidth = availableWidth;
-                        newCanvasHeight = giCalculatedHeightBasedOnWidth;
+                        targetWidth = availableHeight * giAspectRatio;
+                        targetHeight = availableHeight;
+                    }
+                    break;
+
+                case 'flappyBird':
+                    const fbAspectRatio = fbOriginalWidth / fbOriginalHeight;
+                    if (availableWidth / fbAspectRatio <= availableHeight) {
+                        targetWidth = availableWidth;
+                        targetHeight = availableWidth / fbAspectRatio;
+                    } else {
+                        targetWidth = availableHeight * fbAspectRatio;
+                        targetHeight = availableHeight;
                     }
                     break;
 
                 default: // For Pong, Dino, Snake, Asteroids, Breakout
-                    originalWidth = defaultGameOriginalWidth;
-                    originalHeight = defaultGameOriginalHeight;
-                    const defaultAspectRatio = originalWidth / originalHeight;
-
-                    const defaultCalculatedWidthBasedOnHeight = availableHeight * defaultAspectRatio;
-                    const defaultCalculatedHeightBasedOnWidth = availableWidth / defaultAspectRatio;
-
-                    if (defaultCalculatedWidthBasedOnHeight <= availableWidth) {
-                        newCanvasWidth = defaultCalculatedWidthBasedOnHeight;
-                        newCanvasHeight = availableHeight;
+                    const defaultAspectRatio = ORIGINAL_CANVAS_WIDTH / ORIGINAL_CANVAS_HEIGHT;
+                    if (availableWidth / defaultAspectRatio <= availableHeight) {
+                        targetWidth = availableWidth;
+                        targetHeight = availableWidth / defaultAspectRatio;
                     } else {
-                        newCanvasWidth = availableWidth;
-                        newCanvasHeight = defaultCalculatedHeightBasedOnWidth;
+                        targetWidth = availableHeight * defaultAspectRatio;
+                        targetHeight = availableHeight;
                     }
                     break;
             }
 
-            // Store old dimensions before applying new ones to canvas
-            const oldCanvasWidth = canvas.width;
-            const oldCanvasHeight = canvas.height;
+            // Ensure dimensions are positive
+            targetWidth = Math.max(10, targetWidth);
+            targetHeight = Math.max(10, targetHeight);
 
-            // Apply new dimensions to canvas
-            canvas.width = newCanvasWidth;
-            canvas.height = newCanvasHeight;
+            // Set the internal canvas resolution (attributes)
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            // Set the CSS display size to match the internal resolution, preventing stretching/blurriness
+            canvas.style.width = `${targetWidth}px`;
+            canvas.style.height = `${targetHeight}px`;
+
+            // Restore canvas display if it was originally hidden, or keep it block if it was already block
+            canvas.style.display = originalCanvasDisplay;
 
             // Update game-specific global sizes for drawing/logic based on new canvas size
             if (currentGame === 'tetris') {
@@ -778,164 +916,234 @@
                 window.MINE_CELL_SIZE = calculatedBlockSize; // Use the calculated integer cell size
             }
 
-            // Ensure `previousCanvasWidth/Height` are initialized on first run or updated on subsequent runs
-            if (previousCanvasWidth === 0 || previousCanvasHeight === 0 || isNaN(oldCanvasWidth) || isNaN(oldCanvasHeight) || oldCanvasWidth === 0 || oldCanvasHeight === 0) {
-                previousCanvasWidth = canvas.width;
-                previousCanvasHeight = canvas.height;
-            } else if (canvas.width !== oldCanvasWidth || canvas.height !== oldCanvasHeight) {
-                // Canvas dimensions actually changed, so scale existing game elements
-                const scaleX = canvas.width / oldCanvasWidth;
-                const scaleY = canvas.height / oldCanvasHeight;
+            // --- Condition for Scaling Existing Game Elements ---
+            // Scaling should only happen if:
+            // 1. A game is active (gameActive and gameState exist).
+            // 2. There was a *meaningful* previous size (previousCanvasWidth > 0).
+            // 3. The canvas dimensions have genuinely changed from that meaningful previous size.
+            // This explicitly handles window resizes *during* active gameplay.
+            // It should NOT run for the initial setup of a new game.
+            if (gameActive && gameState && previousCanvasWidth > 0 && previousCanvasHeight > 0 && 
+                (canvas.width !== previousCanvasWidth || canvas.height !== previousCanvasHeight)) {
+                
+                const scaleX = canvas.width / previousCanvasWidth;
+                const scaleY = canvas.height / previousCanvasHeight;
 
-                if (gameActive && gameState) {
-                    switch (currentGame) {
-                        case 'dino':
-                            if (gameState.dino) {
-                                gameState.dino.x *= scaleX;
-                                gameState.dino.y *= scaleY;
-                                gameState.dino.width *= scaleX;
-                                gameState.dino.height *= scaleY;
-                                gameState.dino.gravity *= scaleY;
-                                gameState.dino.jumpStrength *= scaleY;
-                                GROUND_LINE_Y = canvas.height - (canvas.height * DINO_Y_OFFSET_RATIO);
-                            }
-                            gameState.obstacles.forEach(obstacle => {
-                                obstacle.x *= scaleX;
-                                obstacle.y *= scaleY;
-                                obstacle.width *= scaleX;
-                                obstacle.height *= scaleY;
+                switch (currentGame) {
+                    case 'dino':
+                        if (gameState.dino) {
+                            gameState.dino.x *= scaleX;
+                            gameState.dino.y *= scaleY;
+                            gameState.dino.width *= scaleX;
+                            gameState.dino.height *= scaleY;
+                            gameState.dino.gravity *= scaleY;
+                            gameState.dino.jumpStrength *= scaleY;
+                            GROUND_LINE_Y = canvas.height - (canvas.height * DINO_Y_OFFSET_RATIO); // Recalculate based on new height
+                        }
+                        gameState.obstacles.forEach(obstacle => {
+                            obstacle.x *= scaleX;
+                            obstacle.y *= scaleY;
+                            obstacle.width *= scaleX;
+                            obstacle.height *= scaleY;
+                        });
+                        gameState.gameSpeed *= scaleX;
+                        break;
+                    case 'snake':
+                        if (gameState.snake) {
+                            gameState.gridSize *= scaleX; // Scale grid size
+                            gameState.snake.forEach(segment => {
+                                segment.x = Math.round(segment.x * scaleX); // Round to nearest grid cell
+                                segment.y = Math.round(segment.y * scaleY);
                             });
-                            gameState.gameSpeed *= scaleX;
-                            break;
-                        case 'snake':
-                            if (gameState.snake) {
-                                gameState.gridSize *= scaleX; // Scale grid size
-                                gameState.snake.forEach(segment => {
-                                    segment.x = Math.round(segment.x * scaleX); // Round to nearest grid cell
-                                    segment.y = Math.round(segment.y * scaleY);
-                                });
-                                gameState.food.x = Math.round(gameState.food.x * scaleX);
-                                gameState.food.y = Math.round(gameState.food.y * scaleY);
-                            }
-                            break;
-                        case 'pong':
-                            if (gameState.paddle1) {
-                                gameState.paddle1.x *= scaleX;
-                                gameState.paddle1.y *= scaleY;
-                                gameState.paddle1.width *= scaleX;
-                                gameState.paddle1.height *= scaleY;
-                                gameState.paddle1.speed *= scaleY;
+                            gameState.food.x = Math.round(gameState.food.x * scaleX);
+                            gameState.food.y = Math.round(gameState.food.y * scaleY);
+                        }
+                        break;
+                    case 'pong':
+                        if (gameState.paddle1) {
+                            // Scale existing paddle properties
+                            gameState.paddle1.x = Math.round(gameState.paddle1.x * scaleX);
+                            gameState.paddle1.y = Math.round(gameState.paddle1.y * scaleY);
+                            gameState.paddle1.width = Math.round(gameState.paddle1.width * scaleX);
+                            gameState.paddle1.height = Math.round(gameState.paddle1.height * scaleY);
+                            gameState.paddle1.speed *= scaleY;
 
-                                gameState.paddle2.x *= scaleX;
-                                gameState.paddle2.y *= scaleY;
-                                gameState.paddle2.width *= scaleX;
-                                gameState.paddle2.height *= scaleY;
-                                gameState.paddle2.speed *= scaleY;
+                            // Recalculate paddle2's X based on new canvas width and paddle1's new position
+                            // Paddle2's width should also be scaled first before calculating its X.
+                            gameState.paddle2.width = Math.round(gameState.paddle2.width * scaleX);
+                            gameState.paddle2.height = Math.round(gameState.paddle2.height * scaleY);
+                            gameState.paddle2.speed *= scaleY;
+                            
+                            // The distance from the left for paddle1 is `gameState.paddle1.x`.
+                            // So, paddle2's X should be `canvas.width - gameState.paddle2.width - gameState.paddle1.x`.
+                            // This line ensures paddle2's x is re-calculated based on the new canvas width and its own scaled width.
+                            // The initial paddleXOffset already dictates the margin, so using it again for paddle2's x is correct.
+                            const paddleXOffset = Math.round(10 * scaleX); 
+                            gameState.paddle2.x = Math.round(canvas.width - gameState.paddle2.width - paddleXOffset);
+                            gameState.paddle2.y = Math.round(gameState.paddle2.y * scaleY); // Scale Y for paddle2
+                            
+                            gameState.ball.x *= scaleX;
+                            gameState.ball.y *= scaleY;
+                            gameState.ball.dx *= scaleX;
+                            gameState.ball.dy *= scaleY;
+                            gameState.ball.radius *= Math.min(scaleX, scaleY); // Keep ball round
+                            gameState.initialBallSpeed *= scaleX;
+                        }
+                        break;
+                    case 'asteroids':
+                        if (gameState.ship) {
+                            gameState.ship.x *= scaleX;
+                            gameState.ship.y *= scaleY;
+                            gameState.ship.thrust *= Math.min(scaleX, scaleY); // Scale thrust proportionally
+                        }
+                        gameState.bullets.forEach(bullet => {
+                            bullet.x *= scaleX;
+                            bullet.y *= scaleY;
+                            bullet.vx *= scaleX;
+                            bullet.vy *= scaleY;
+                        });
+                        gameState.asteroids.forEach(asteroid => {
+                            asteroid.x *= scaleX;
+                            asteroid.y *= scaleY;
+                            asteroid.vx *= Math.min(scaleX, scaleY); // Scale asteroid speeds
+                            asteroid.vy *= Math.min(scaleX, scaleY);
+                            asteroid.radius *= Math.min(scaleX, scaleY);
+                        });
+                        break;
+                    case 'breakout':
+                        if (gameState.paddle) {
+                            gameState.paddle.x *= scaleX;
+                            gameState.paddle.y *= scaleY;
+                            gameState.paddle.width *= scaleX;
+                            gameState.paddle.height *= scaleY;
+                            gameState.paddle.speed *= scaleX;
+                        }
+                        if (gameState.ball) {
+                            gameState.ball.x *= scaleX;
+                            gameState.ball.y *= scaleY;
+                            gameState.ball.prevX *= scaleX;
+                            gameState.ball.prevY *= scaleY;
+                            gameState.ball.vx *= scaleX;
+                            gameState.ball.vy *= scaleY;
+                            gameState.ball.radius *= Math.min(scaleX, scaleY);
+                        }
+                        // Re-initialize block positions and dimensions based on the *new* canvas size
+                        // instead of scaling individual block properties from their old values.
+                        // This ensures they always fit the new canvas proportions correctly from a "fresh grid" perspective.
+                        const blocksPerRow = 10;
+                        const numRows = 5;
+                        const originalBlockDesignHeight = 15; // Only needed for height calculation
+                        const originalTopOffset = 60; // Offset from canvas top to the first row of blocks
 
-                                gameState.ball.x *= scaleX;
-                                gameState.ball.y *= scaleY;
-                                gameState.ball.dx *= scaleX;
-                                gameState.ball.dy *= scaleY;
-                                gameState.ball.radius *= Math.min(scaleX, scaleY); // Keep ball round
-                                gameState.initialBallSpeed *= scaleX;
-                            }
-                            break;
-                        case 'asteroids':
-                            if (gameState.ship) {
-                                gameState.ship.x *= scaleX;
-                                gameState.ship.y *= scaleY;
-                                gameState.ship.thrust *= Math.min(scaleX, scaleY); // Scale thrust proportionally
-                            }
-                            gameState.bullets.forEach(bullet => {
-                                bullet.x *= scaleX;
-                                bullet.y *= scaleY;
-                                bullet.vx *= scaleX;
-                                bullet.vy *= scaleY;
-                            });
-                            gameState.asteroids.forEach(asteroid => {
-                                asteroid.x *= scaleX;
-                                asteroid.y *= scaleY;
-                                asteroid.vx *= Math.min(scaleX, scaleY); // Scale asteroid speeds
-                                asteroid.vy *= Math.min(scaleX, scaleY);
-                                asteroid.radius *= Math.min(scaleX, scaleY);
-                            });
-                            break;
-                        case 'breakout':
-                            if (gameState.paddle) {
-                                gameState.paddle.x *= scaleX;
-                                gameState.paddle.y *= scaleY;
-                                gameState.paddle.width *= scaleX;
-                                gameState.paddle.height *= scaleY;
-                                gameState.paddle.speed *= scaleX;
-                            }
-                            if (gameState.ball) {
-                                gameState.ball.x *= scaleX;
-                                gameState.ball.y *= scaleY;
-                                gameState.ball.prevX *= scaleX;
-                                gameState.ball.prevY *= scaleY;
-                                gameState.ball.vx *= scaleX;
-                                gameState.ball.vy *= scaleY;
-                                gameState.ball.radius *= Math.min(scaleX, scaleY);
-                            }
-                            gameState.blocks.forEach(block => {
-                                block.x *= scaleX;
-                                block.y *= scaleY;
-                                block.width *= scaleX;
-                                block.height *= scaleY;
-                            });
-                            break;
-                        case 'galacticInvaders':
-                            if (gameState.player) {
-                                gameState.player.x *= scaleX;
-                                gameState.player.y *= scaleY;
-                                gameState.player.width *= scaleX;
-                                gameState.player.height *= scaleY;
-                            }
-                            gameState.playerBullets.forEach(bullet => {
-                                bullet.x *= scaleX;
-                                bullet.y *= scaleY;
-                                bullet.radius *= Math.min(scaleX, scaleY);
-                                bullet.vy *= scaleY; // Bullet speed in Y scales
-                            });
-                            gameState.enemies.forEach(enemy => {
-                                enemy.x *= scaleX;
-                                enemy.y *= scaleY;
-                                enemy.initialY *= scaleY; // Update initialY for oscillation
-                                enemy.width *= scaleX;
-                                enemy.height *= scaleY;
-                                enemy.diveTargetX *= scaleX;
-                            });
-                            gameState.enemyBullets.forEach(bullet => {
-                                bullet.x *= scaleX;
-                                bullet.y *= scaleY;
-                                bullet.radius *= Math.min(scaleX, scaleY);
-                                bullet.vy *= scaleY; // Bullet speed in Y scales
-                            });
-                            gameState.explosions.forEach(explosion => {
-                                explosion.x *= scaleX;
-                                explosion.y *= scaleY;
-                            });
-                            gameState.waveOscillationAmplitude *= scaleY;
-                            break;
-                        case 'tetris':
-                            // For Tetris, the pieces and board are based on block size, which is recalculated.
-                            // We need to re-center the current piece on the new scaled board.
-                            if (gameState.currentPiece) {
-                                gameState.pieceX = Math.floor(TETRIS_COLS / 2) - Math.floor(gameState.currentPiece[0].length / 2);
-                                // Y might need adjustment if canvas height changed drastically, but generally starts at 0
-                            }
-                            // No need to scale individual block positions as they are relative to grid coordinates * BLOCK_SIZE
-                            break;
-                        case 'minesweeper':
-                            // For Minesweeper, cells are also based on MINE_CELL_SIZE, which is recalculated.
-                            // No individual scaling needed as positions are grid-based.
-                            break;
-                    }
+                        // --- FIX FOR BREAKOUT: New aggressive approach to ensure blocks cover the entire width ---
+                        // Calculate block width by dividing the total canvas width by blocksPerRow.
+                        // This makes the blocks fill the entire width as much as possible.
+                        const calculatedBlockWidth = Math.round(canvas.width / blocksPerRow);
+
+                        // Explicitly set padding between blocks to 0 for maximum coverage
+                        const calculatedBlockPadding = 0;
+
+                        // Calculate the actual total width of the block grid with zero padding and rounded block width.
+                        // This is necessary because `currentCanvasWidth` might not be perfectly divisible by `blocksPerRow`.
+                        const actualTotalBlockGridWidth = blocksPerRow * calculatedBlockWidth;
+
+                        // Calculate the left offset to center the grid of blocks within the canvas.
+                        // This will distribute any tiny residual space (e.g., 0.5 pixels) from `Math.round` evenly.
+                        const blockOffsetLeft = (canvas.width - actualTotalBlockGridWidth) / 2;
+
+                        // Calculate the top offset for the blocks, scaled by the vertical canvas scale
+                        const blockOffsetTop = Math.floor(originalTopOffset * (canvas.height / ORIGINAL_CANVAS_HEIGHT));
+
+                        // Calculate the block height, scaled by the vertical canvas scale
+                        const blockHeight = Math.floor(originalBlockDesignHeight * (canvas.height / ORIGINAL_CANVAS_HEIGHT));
+
+                        // For vertical padding, you can choose:
+                        // 1. Same as horizontal (which is now 0)
+                        // 2. A small, fixed, scaled value (e.g., Math.floor(5 * scaleFactorY))
+                        // Let's use a small, scaled value to have some vertical separation.
+                        const verticalPaddingBetweenRows = Math.floor(5 * scaleY); // Use scaleY here
+
+                        gameState.blocks.forEach((block, index) => {
+                            const row = Math.floor(index / blocksPerRow);
+                            const col = index % blocksPerRow;
+                            block.x = blockOffsetLeft + col * (calculatedBlockWidth + calculatedBlockPadding);
+                            block.y = blockOffsetTop + row * (blockHeight + verticalPaddingBetweenRows); // Use calculatedBlockPadding for vertical too
+                            block.width = calculatedBlockWidth;
+                            block.height = blockHeight;
+                        });
+                        break;
+                    case 'galacticInvaders':
+                        // When scaling elements in Galactic Invaders during a canvas resize,
+                        // we must also re-evaluate the elements' dimensions relative to the new canvas size.
+                        // The player and enemy ships' internal drawing uses a `entityScale` derived from the canvas width
+                        // to maintain aspect ratio for their geometry. So we only need to update positions.
+                        if (gameState.player) {
+                            gameState.player.x *= scaleX;
+                            // Recalculate player Y based on the new canvas height and original offset
+                            const currentScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
+                            const playerActualDrawnBottomOffsetFromCenter = 15; // As defined in drawPlayerShip
+                            gameState.player.y = canvas.height - (GI_PLAYER_Y_OFFSET * currentScale) - (GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * currentScale);
+                        }
+                        gameState.playerBullets.forEach(bullet => {
+                            bullet.x *= scaleX;
+                            bullet.y *= scaleY;
+                            bullet.radius *= Math.min(scaleX, scaleY);
+                            bullet.vy *= scaleY;
+                        });
+                        gameState.enemies.forEach(enemy => {
+                            enemy.x *= scaleX;
+                            enemy.y *= scaleY;
+                            enemy.initialY *= scaleY;
+                            enemy.diveTargetX *= scaleX;
+                        });
+                        gameState.enemyBullets.forEach(bullet => {
+                            bullet.x *= scaleX;
+                            bullet.y *= scaleY;
+                            bullet.radius *= Math.min(scaleX, scaleY);
+                            bullet.vy *= scaleY;
+                        });
+                        gameState.explosions.forEach(explosion => {
+                            explosion.x *= scaleX;
+                            explosion.y *= scaleY;
+                        });
+                        gameState.waveOscillationAmplitude *= scaleY;
+                        break;
+                    case 'flappyBird':
+                        if (gameState.bird) {
+                            gameState.bird.x *= scaleX;
+                            gameState.bird.y *= scaleY;
+                            gameState.bird.width *= scaleX;
+                            gameState.bird.height *= scaleY;
+                            gameState.bird.dy *= scaleY;
+                            gameState.gravity *= scaleY;
+                            gameState.jumpStrength *= scaleY;
+                        }
+                        gameState.pipes.forEach(pipe => {
+                            pipe.x *= scaleX;
+                            pipe.width *= scaleX;
+                            pipe.topHeight *= scaleY;
+                            pipe.gap *= scaleY; // Adjusted gap, scales with Y
+                            pipe.speed *= scaleX;
+                        });
+                        gameState.groundHeight *= scaleY;
+                        break;
+                    case 'tetris':
+                        if (gameState.currentPiece) {
+                            gameState.pieceX = Math.floor(TETRIS_COLS / 2) - Math.floor(gameState.currentPiece[0].length / 2);
+                        }
+                        break;
+                    case 'minesweeper':
+                        break;
                 }
-                previousCanvasWidth = canvas.width;
-                previousCanvasHeight = canvas.height;
             }
             
+            // --- Update previousCanvasWidth/Height for the next resize event ---
+            // ALWAYS update this to the NEW current canvas dimensions.
+            // This ensures that `previousCanvasWidth`/`Height` always reflects the actual size of the canvas
+            // after the *most recent* resize operation (whether it was an initial setup or a dynamic resize).
+            previousCanvasWidth = canvas.width;
+            previousCanvasHeight = canvas.height;
+
             // Force a redraw if game is active, regardless of whether scaling happened or not
             if (gameActive && ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -948,6 +1156,7 @@
                     case 'tetris': drawTetris(); break;
                     case 'minesweeper': drawMinesweeper(); break;
                     case 'galacticInvaders': drawGalacticInvaders(); break;
+                    case 'flappyBird': drawFlappyBird(); break;
                 }
             }
         }
@@ -970,186 +1179,102 @@
 
             currentGame = gameType; // Set current game
             
-            // Re-initialize previous canvas dimensions before calling resizeCanvas for the first time
-            // to ensure a clean state for scaling calculation
-            previousCanvasWidth = 0;
+            // Initially hide the entire game area. It will be shown AFTER the "Start Game" button is clicked.
+            document.getElementById('gameArea').style.display = 'none'; 
+
+            // Reset previous canvas dimensions to 0. This is crucial for initial setup.
+            previousCanvasWidth = 0; 
             previousCanvasHeight = 0;
 
-            // Set initial visibility states before calling resizeCanvas,
-            // so resizeCanvas can accurately calculate available space
-            document.getElementById('gameArea').style.display = 'flex'; // Show game area as flex container
-            document.getElementById('gameTitle').style.display = 'block'; // Assume title will be shown for calc
-            document.getElementById('scoreDisplay').style.display = 'block'; // Assume score will be shown for calc
-            document.getElementById('minesweeperInfo').style.display = 'none'; // Initially hidden
-            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Initially hidden
-            document.getElementById('restartGameButton').style.display = 'block'; // Assume buttons will be shown for calc
-            document.querySelector('.action-buttons').style.display = 'flex'; // Assume buttons will be shown for calc
-            canvas.style.display = 'block'; // Canvas will be visible
-            document.getElementById('pongDifficultySelection').style.display = 'none'; // Initially hidden
-            // Message box is positioned absolutely, so it doesn't affect flow layout for height calculation
+            // *** IMPORTANT STEP: Reset canvas to a known small/default state ***
+            resetCanvasDimensions();
 
-            resizeCanvas(); // Set initial canvas size based on game type and available space
+            // Initialize game state *after* the canvas dimensions are reset.
+            gameState = {}; // Clear game state for a fresh start
+            switch(gameType) {
+                case 'dino': initDino(); break;
+                case 'snake': initSnake(); break;
+                case 'asteroids': initAsteroids(); break;
+                case 'breakout': initBreakout(); break;
+                case 'tetris': initTetris(); break;
+                case 'minesweeper': initMinesweeper(); break;
+                case 'galacticInvaders': initGalacticInvaders(); break;
+                case 'flappyBird': initFlappyBird(); break;
+            }
 
-            // Clear the canvas explicitly to remove any lingering drawings
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#000'; // Fill with black for a clean background
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-
-            // Hide game specific elements initially for all games
-            document.getElementById('minesweeperInfo').style.display = 'none';
-            document.getElementById('scoreDisplay').style.display = 'none'; // Generic score display, will be set by game type
-            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Galactic Invaders info display
-            document.getElementById('restartGameButton').style.display = 'none'; 
-            document.querySelector('.action-buttons').style.display = 'none'; 
-            canvas.style.display = 'none'; 
-            // Always hide game title until the game is actually started (not just showing instructions)
-            document.getElementById('gameTitle').style.display = 'none'; 
+            // Clear the canvas explicitly to remove any lingering drawings (important after init)
+            // Note: Canvas is still display:none at this point due to resetCanvasDimensions. This just clears previous contents.
+            if (ctx) { // Check if ctx is defined
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000'; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
             
-            // Clear game state and input keys for a fresh start
-            score = 0; // Reset score for the game that's about to start
-            updateScore(); // This will update the scoreDisplay element
+            // Clear general score and input keys for a fresh start.
+            // Game-specific scores will be reset in their init functions.
+            score = 0; 
             keysPressed.clear();
-            console.log(`[Game Start] Current score reset to: ${score}`); // Log for debugging
 
-            // Remove previous Minesweeper-specific listeners (if any)
+            // Remove previous game-specific listeners (if any)
             canvas.removeEventListener('click', handleMinesweeperClick);
             canvas.removeEventListener('contextmenu', handleMinesweeperRightClick);
 
 
-            // Game-specific initializations
+            // Game-specific initializations for Pong or general message
             if (gameType === 'pong' && difficulty === null) {
-                // For Pong, show difficulty selection first, and the gameArea frame
-                document.getElementById('gameArea').style.display = 'flex'; // Show game area for Pong difficulty
+                // For Pong, show difficulty selection immediately within the game area container
+                document.getElementById('gameArea').style.display = 'flex'; // Show game area as container
                 document.getElementById('pongDifficultySelection').style.display = 'flex';
-                // gameTitle remains hidden here. It will be shown in startSelectedPongDifficulty.
-                // No need to initialize Pong game state yet, it will be done after difficulty selection
+                // Hide action buttons and ALL score displays during difficulty selection
+                document.getElementById('restartGameButton').style.display = 'none';
+                document.querySelector('.action-buttons').style.display = 'none';
+                document.getElementById('scoreDisplay').style.display = 'none'; // Explicitly hide generic score
+                document.getElementById('minesweeperInfo').style.display = 'none'; // Explicitly hide minesweeper info
+                document.getElementById('galacticInvadersInfo').style.display = 'none'; // Explicitly hide GI info
+                document.getElementById('gameTitle').style.display = 'none'; // Hide title during selection
+
+                // The startSelectedPongDifficulty will handle the final resizeCanvas() call and canvas visibility.
             } else {
-                // For other games, show the gameArea as container for messageBox
-                document.getElementById('gameArea').style.display = 'flex'; 
-                // gameTitle is explicitly hidden above. This will be shown when startGameFromOverlay is called.
+                // For other games, show the start instructions message.
+                // The messageBox is absolutely positioned, so it does not need gameArea to be flex.
                 const controlsText = getControlsText(gameType);
-                // Pass true for isStartOverlay to show 'Start Game' button
                 showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true);
-                
-                // Initialize game state (but don't start game loop until user clicks OK)
-                gameState = {}; // Clear previous game state
-                switch(gameType) {
-                    case 'dino': initDino(); break;
-                    case 'snake': initSnake(); break;
-                    // Pong is handled above if difficulty is null
-                    case 'asteroids': initAsteroids(); break;
-                    case 'breakout': initBreakout(); break;
-                    case 'tetris': initTetris(); break;
-                    case 'minesweeper': initMinesweeper(); break;
-                    case 'galacticInvaders': initGalacticInvaders(); break;
-                }
+                // startGameFromOverlay will handle showing gameArea and its.
             }
         }
-
-        // Modified showMessage to distinguish start overlay messages
-        function showMessage(msg, isStartOverlay = false) {
-            messageText.innerHTML = msg;
-            
-            if (isStartOverlay) {
-                messageBoxOkBtn.textContent = 'Start Game';
-                messageBoxOkBtn.onclick = startGameFromOverlay; // Attach specific start function
-            } else { // Regular in-game message
-                messageBoxOkBtn.textContent = 'OK';
-                messageBoxOkBtn.onclick = hideMessage;
-            }
-            messageBox.style.display = 'block'; // This makes the message box visible
-            gameActive = false; // Pause game logic
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId); // Ensure loop stops when message is shown
-                animationFrameId = null;
-            }
-        }
-        
-        function hideMessage() {
-            messageBox.style.display = 'none';
-            // Reset messageBoxOkBtn's onclick in case it was modified for a start overlay
-            messageBoxOkBtn.onclick = hideMessage;
-            messageBoxOkBtn.textContent = 'OK'; 
-
-            gameActive = true; // Resume/start game logic
-            
-            // Show relevant info based on game type AFTER starting
-            if (currentGame === 'minesweeper') {
-                document.getElementById('minesweeperInfo').style.display = 'flex';
-                document.getElementById('scoreDisplay').style.display = 'none'; // Minesweeper uses its own score/timer display
-            } else if (currentGame === 'galacticInvaders') {
-                document.getElementById('galacticInvadersInfo').style.display = 'flex';
-                document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
-                updateGalacticInvadersScoreAndLives(); // Update specific UI
-            }
-            else { // For other games
-                document.getElementById('minesweeperInfo').style.display = 'none';
-                document.getElementById('galacticInvadersInfo').style.display = 'none';
-                document.getElementById('scoreDisplay').style.display = 'block';
-            }
-            
-            document.getElementById('gameTitle').style.display = 'block'; // Show game title now
-            document.getElementById('gameArea').style.display = 'flex'; // Game Area is already active and its children will be shown
-            canvas.style.display = 'block'; // Show canvas now that instructions are hidden
-            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
-            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
-            
-            lastFrameTime = performance.now();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
-        // New function to handle starting game from the overlay's "Start Game" button
-        function startGameFromOverlay() {
-            messageBox.style.display = 'none';
-            gameActive = true; // Set unified game active flag
-            
-            // Now, show the actual game elements within the gameArea
-            document.getElementById('gameArea').style.display = 'flex'; // Game area container should already be visible
-            document.getElementById('gameTitle').style.display = 'block'; // Show game title now
-            document.getElementById('gameTitle').textContent = getGameTitle(currentGame); // Ensure title is set
-            canvas.style.display = 'block'; 
-            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
-            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
-            
-            // Show relevant info based on game type AFTER starting
-            if (currentGame === 'minesweeper') {
-                document.getElementById('minesweeperInfo').style.display = 'flex';
-                document.getElementById('scoreDisplay').style.display = 'none';
-            } else if (currentGame === 'galacticInvaders') {
-                document.getElementById('galacticInvadersInfo').style.display = 'flex';
-                document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
-                updateGalacticInvadersScoreAndLives(); // Update specific UI
-            }
-            else { // For other games
-                document.getElementById('minesweeperInfo').style.display = 'none';
-                document.getElementById('galacticInvadersInfo').style.display = 'none';
-                document.getElementById('scoreDisplay').style.display = 'block';
-            }
-            
-            setupControls(currentGame); // Update controls display (now just clears the div)
-            lastFrameTime = performance.now();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-
 
         function startSelectedPongDifficulty() {
             const selectedDifficulty = document.querySelector('input[name="pongDifficulty"]:checked').value;
-            // Directly initialize and start Pong without the extra message box step
-            initializeGame('pong', selectedDifficulty); 
+            
+            // Initialize Pong after difficulty selected, ensures game state has correct difficulty
+            initPong(selectedDifficulty); 
+
             document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide difficulty selection
-            document.getElementById('gameTitle').style.display = 'block'; // Show game title for Pong
-            document.getElementById('gameTitle').textContent = getGameTitle('pong'); // Update title
-            // GameArea is already 'flex' from startGame for Pong. Now show its contents.
-            document.getElementById('scoreDisplay').style.display = 'block'; // Show score display
-            document.getElementById('restartGameButton').style.display = 'block'; // Show restart button
-            canvas.style.display = 'block'; // Show canvas now that difficulty is selected
-            document.querySelector('.action-buttons').style.display = 'flex'; // Show action buttons
-            setupControls('pong'); // Setup controls (now just clears the div)
+
+            // Explicitly show relevant UI elements AFTER difficulty is selected
+            document.getElementById('gameArea').style.display = 'flex'; // Show the game area
+            document.getElementById('gameTitle').style.display = 'block';
+            document.getElementById('gameTitle').textContent = getGameTitle('pong');
+            
+            // Ensure only the correct score display is shown for Pong
+            document.getElementById('galacticInvadersInfo').style.display = 'none';
+            document.getElementById('minesweeperInfo').style.display = 'none';
+            document.getElementById('scoreDisplay').style.display = 'block'; // Ensure generic score display is visible
+            updateScore(); // Update Pong's specific score display
+            
+            document.getElementById('restartGameButton').style.display = 'block';
+            document.querySelector('.action-buttons').style.display = 'flex';
+
+            // Now, with all relevant UI elements visible, resize the canvas
+            resizeCanvas();
+            canvas.style.display = 'block'; // Make canvas visible after sizing
+
+            setupControls('pong');
             gameActive = true;
             lastFrameTime = performance.now();
             animationFrameId = requestAnimationFrame(gameLoop);
         }
+
 
         function gameOver(status = 'lost') {
             if (animationFrameId) {
@@ -1183,13 +1308,18 @@
                 gameOverH2.style.textShadow = '0 0 15px #ff0077';
                 gameOverContent.style.borderColor = '#ff0077';
                 finalScoreDisplay.textContent = `Final Score: ${gameState.score} (Wave ${gameState.wave})`; // Include wave in final score
-
+            } else if (currentGame === 'pong') {
+                gameOverH2.textContent = 'GAME OVER!';
+                gameOverH2.style.color = '#ff0041';
+                // textShadow: '0 0 15px #ff0041'; // Corrected syntax
+                gameOverContent.style.borderColor = '#ff0041';
+                finalScoreDisplay.textContent = `Player 1: ${gameState.player1Score} | Player 2: ${gameState.player2Score}`;
             }
             // For all other traditional score games
             else {
                 gameOverH2.textContent = 'GAME OVER!';
                 gameOverH2.style.color = '#ff0041';
-                gameOverH2.style.textShadow = '0 0 15px #ff0041';
+                // textShadow: '0 0 15px #ff0041'; // Corrected syntax
                 gameOverContent.style.borderColor = '#ff0041';
                 finalScoreDisplay.textContent = `Final Score: ${score}`;
             }
@@ -1205,41 +1335,44 @@
             }
             gameActive = false; // Ensure game is marked inactive before re-init
 
-            score = 0; // Reset general score
-            updateScore(); // Update generic score display
-            gameState = {}; // Clear previous game state
+            // Reset general score. Game-specific scores will be reset in their init functions.
+            score = 0; 
             keysPressed.clear(); // Clear any pressed keys
-            console.log(`[Game Restart] Current score reset to: ${score}`); // Log for debugging
+            console.log(`[Game Restart] Current general score reset to: ${score}`); // Log for debugging
 
-            // Clear canvas display explicitly before re-initializing
+            // Hide all game-related UI elements explicitly before re-initializing or showing message box
+            document.getElementById('restartGameButton').style.display = 'none'; 
+            document.querySelector('.action-buttons').style.display = 'none'; 
+            document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
+            document.getElementById('minesweeperInfo').style.display = 'none'; 
+            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
+            document.getElementById('gameTitle').style.display = 'none'; // Explicitly hide game title
+            document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide pong difficulty if it was visible
+            document.getElementById('gameArea').style.display = 'none'; // Hide the entire game area container
+
+            // Reset previous canvas dimensions to 0. This is crucial for restarts.
+            previousCanvasWidth = 0;
+            previousCanvasHeight = 0;
+
+            // *** IMPORTANT STEP: Reset canvas to a known small/default state ***
+            resetCanvasDimensions();
+
+            // Remove game specific listeners if any were added
+            canvas.removeEventListener('click', handleMinesweeperClick); // For Minesweeper
+            canvas.removeEventListener('contextmenu', handleMinesweeperRightClick);
+
+            // Clear canvas explicitly before re-initializing (uses reset canvas dimensions)
             if (ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#000'; // Fill with black
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Hide game-specific UI elements (they will be shown by startGame later)
-            canvas.style.display = 'none';
-            document.getElementById('restartGameButton').style.display = 'none'; 
-            document.querySelector('.action-buttons').style.display = 'none'; 
-            document.getElementById('scoreDisplay').style.display = 'none'; // Hide generic score
-            document.getElementById('minesweeperInfo').style.display = 'none'; 
-            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
-            document.getElementById('gameTitle').style.display = 'none'; // Explicitly hide game title on restart
-            document.getElementById('pongDifficultySelection').style.display = 'none'; // Hide pong difficulty if it was visible
-
-            // Ensure gameArea is visible as container for the message/difficulty
-            document.getElementById('gameArea').style.display = 'flex'; // Changed to flex
-
-            // Re-initialize previous canvas dimensions for accurate scaling upon restart
-            previousCanvasWidth = 0;
-            previousCanvasHeight = 0;
-
             if (currentGame === 'pong') {
-                // For Pong, go back to difficulty selection, which correctly uses gameArea styling
+                // For Pong, go back to difficulty selection, which correctly calls startGame
                 startGame('pong', null); 
             } else {
-                // For other games, re-initialize and show the start message again (which uses gameArea styling)
+                // For other games, re-initialize and show the start message again.
                 initializeGame(currentGame); 
                 const controlsText = getControlsText(currentGame);
                 showMessage(`**Controls:** ${controlsText}<br><br>Click 'Start Game' to begin the challenge!`, true); 
@@ -1248,8 +1381,8 @@
 
         function restartGameFromGameOver() {
             document.getElementById('gameOverOverlay').classList.remove('active');
-            // Call startGame for the current game, which handles all necessary resets and setup.
-            restartGame(); // Use restartGame to ensure full re-init and setup for controls/canvas
+            // Call restartGame for the current game, which handles all necessary resets and setup.
+            restartGame(); 
         }
 
 
@@ -1285,25 +1418,16 @@
             
             currentGame = null; // Clear current game selection
             score = 0; // Reset general score for the menu
-            updateScore();
+            updateScore(); // Update the generic score display (will show Score: 0)
             keysPressed.clear(); // Clear any pressed keys
 
-            // Reset previous canvas dimensions when returning to menu to prevent scaling issues on next game start
-            previousCanvasWidth = 0;
+            // Reset previous canvas dimensions when returning to menu. This ensures that when a new game
+            // starts, the `resizeCanvas` scaling logic is correctly bypassed on the *first* resize call.
+            previousCanvasWidth = 0; 
             previousCanvasHeight = 0;
 
-            document.getElementById('minesweeperInfo').style.display = 'none'; // Hide Minesweeper info
-            document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic Invaders info
-            document.getElementById('scoreDisplay').style.display = 'block'; // Ensure general score display is visible
-            document.getElementById('restartGameButton').style.display = 'none'; // Hide restart button when back to menu
-            document.querySelector('.action-buttons').style.display = 'none'; // Hide action buttons when back to menu
-            document.getElementById('gameTitle').style.display = 'none'; // Ensure it's hidden when returning to menu
-
-
-            // Ensure canvas is hidden when going back to menu
-            if (canvas) {
-                canvas.style.display = 'none';
-            }
+            // *** IMPORTANT STEP: Reset canvas dimensions when going back to menu ***
+            resetCanvasDimensions();
 
             // Remove Minesweeper specific listeners
             canvas.removeEventListener('click', handleMinesweeperClick);
@@ -1311,9 +1435,30 @@
         }
 
         function updateScore() {
-            // This function is for traditional game scores only
-            if (currentGame !== 'minesweeper' && currentGame !== 'galacticInvaders') { // Minesweeper and Galactic Invaders have their own score display
-                document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+            // This function handles the scoreboard for ALL games, adapting its display.
+            const scoreDisplayElement = document.getElementById('scoreDisplay');
+            if (currentGame === 'pong') {
+                // Pong uses separate player scores stored in gameState
+                scoreDisplayElement.textContent = `Player: ${gameState.player1Score} | Computer: ${gameState.player2Score}`;
+                scoreDisplayElement.style.display = 'block';
+                document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide Galactic invaders info if active
+                document.getElementById('minesweeperInfo').style.display = 'none'; // Hide minesweeper info if active
+            } else if (currentGame === 'minesweeper') {
+                // Minesweeper has its own info bar, so hide generic score
+                scoreDisplayElement.style.display = 'none';
+                document.getElementById('minesweeperInfo').style.display = 'flex'; // Ensure minesweeper info is visible
+            } else if (currentGame === 'galacticInvaders') {
+                // Galactic Invaders has its own info bar, so hide generic score
+                scoreDisplayElement.style.display = 'none';
+                // Call specific update for Galactic Invaders to ensure its elements are correctly shown
+                updateGalacticInvadersScoreAndLives();
+                document.getElementById('galacticInvadersInfo').style.display = 'flex'; // Ensure Galactic Invaders info is visible
+            } else {
+                // All other games use the single 'score' variable
+                scoreDisplayElement.textContent = 'Score: ' + score;
+                scoreDisplayElement.style.display = 'block';
+                document.getElementById('minesweeperInfo').style.display = 'none'; // Hide if not minesweeper
+                document.getElementById('galacticInvadersInfo').style.display = 'none'; // Hide if not galactic invaders
             }
         }
 
@@ -1322,11 +1467,7 @@
             // This function now only handles the initial setup for traditional games
             // Canvas/context is already set up by startGame for the correct game type.
 
-            if (ctx) { // Only clear if it's a traditional game canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
+            // No clearRect here, it's handled when canvas is about to be drawn on
             
             switch(gameType) {
                 case 'dino': initDino(); break;
@@ -1337,6 +1478,7 @@
                 case 'tetris': initTetris(); break;
                 case 'minesweeper': initMinesweeper(); break;
                 case 'galacticInvaders': initGalacticInvaders(); break;
+                case 'flappyBird': initFlappyBird(); break;
             }
         }
 
@@ -1349,7 +1491,8 @@
                 breakout: '🧱 Block Destroyer',
                 tetris: '🟦 Pixel Tetris',
                 minesweeper: '💣 Hidden Grid',
-                galacticInvaders: '🚀 Galactic Invaders'
+                galacticInvaders: '🚀 Galactic Invaders',
+                flappyBird: '🐦 Flappy Flight'
             };
             return titles[gameType];
         }
@@ -1365,6 +1508,7 @@
                 case 'tetris': instructions = 'Use **← Arrow / A** (Left), **→ Arrow / D** (Right), **↓ Arrow / S** (Soft Drop). Use **↑ Arrow / W** (Rotate). Press **SPACEBAR** for Hard Drop.'; break;
                 case 'minesweeper': instructions = 'Click a square to reveal it. Right-click (or Ctrl+Click) to flag a mine. Clear all non-mine squares to win.'; break;
                 case 'galacticInvaders': instructions = 'Use **A** (Left) and **D** (Right) or **← Arrow** (Left) and **→ Arrow** (Right) to move your ship. Press **SPACEBAR** to shoot.'; break;
+                case 'flappyBird': instructions = 'Press **SPACEBAR** to make the bird flap. Avoid the pipes!'; break;
                 default: instructions = 'Keyboard controls.';
             }
             return instructions;
@@ -1384,42 +1528,48 @@
         const DINO_WIDTH_RATIO = 0.05; // 30 / 600 = 0.05
 
         function initDino() {
-            // Update constants based on current canvas size
-            const currentDinoHeight = canvas.height * DINO_HEIGHT_RATIO;
-            const currentDinoWidth = canvas.width * DINO_WIDTH_RATIO;
-            GROUND_LINE_Y = canvas.height - (canvas.height * DINO_Y_OFFSET_RATIO);
+            // Update constants based on current canvas size.
+            // At this point, canvas.width/height reflect the *default* (e.g. 600x400) or
+            // the last *correctly* set size if a window resize happened.
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+
+            const currentDinoHeight = currentCanvasHeight * DINO_HEIGHT_RATIO;
+            const currentDinoWidth = currentCanvasWidth * DINO_WIDTH_RATIO;
+            GROUND_LINE_Y = currentCanvasHeight - (currentCanvasHeight * DINO_Y_OFFSET_RATIO);
 
             gameState.dino = {
-                x: 50 * (canvas.width / 600), // Scale initial x
+                x: 50 * (currentCanvasWidth / ORIGINAL_CANVAS_WIDTH), // Scale initial x based on the current canvas width
                 y: GROUND_LINE_Y - currentDinoHeight, // Use scaled height
                 width: currentDinoWidth,
                 height: currentDinoHeight,
                 dy: 0, 
-                gravity: 2400 * (canvas.height / 400), // Scale gravity with height
-                jumpStrength: -600 * (canvas.height / 400), // Scale jump strength with height
+                gravity: 2400 * (currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT), // Scale gravity with height
+                jumpStrength: -600 * (currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT), // Scale jump strength with height
                 isJumping: false,
                 draw() {
                     if (!ctx) return;
                     ctx.fillStyle = '#00ff41'; ctx.fillRect(this.x, this.y, this.width, this.height);
                     ctx.beginPath(); ctx.arc(this.x + this.width, this.y + this.height * 0.2, this.width * 0.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(this.x + this.width + 5 * (canvas.width / 600), this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2 * (canvas.width / 600), 0, Math.PI * 2); ctx.fill();
-                },
-                jump() { if (!this.isJumping) { this.dy = this.jumpStrength; this.isJumping = true; } },
-                update(deltaTime) {
-                    this.dy += this.gravity * deltaTime; // Apply gravity over time
-                    this.y += this.dy * deltaTime; // Apply vertical movement over time
-                    if (this.y + this.height > GROUND_LINE_Y) { this.y = GROUND_LINE_Y - this.height; this.dy = 0; this.isJumping = false; }
+                    ctx.beginPath(); ctx.arc(this.x + this.width + 5 * (currentCanvasWidth / ORIGINAL_CANVAS_WIDTH), this.y + this.height * 0.1, this.width * 0.3, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(this.x + this.width + this.width * 0.4, this.y + this.height * 0.15, 2 * (currentCanvasWidth / ORIGINAL_CANVAS_WIDTH), 0, Math.PI * 2); ctx.fill();
                 }
             };
+            gameState.dino.jump = function() { if (!this.isJumping) { this.dy = this.jumpStrength; this.isJumping = true; } };
+            gameState.dino.update = function(deltaTime) {
+                this.dy += this.gravity * deltaTime; // Apply gravity over time
+                this.y += this.dy * deltaTime; // Apply vertical movement over time
+                if (this.y + this.height > GROUND_LINE_Y) { this.y = GROUND_LINE_Y - this.height; this.dy = 0; this.isJumping = false; }
+            };
+
             gameState.obstacles = [];
-            gameState.gameSpeed = 500 * (canvas.width / 600); // Initial speed, scaled
+            gameState.gameSpeed = 500 * (currentCanvasWidth / ORIGINAL_CANVAS_WIDTH); // Initial speed, scaled
             gameState.obstacleSpawnTimer = 0; // In seconds
             gameState.obstacleSpawnInterval = 0.7; // Initial interval
         }
 
         function createDinoObstacle() {
-            const scaleFactor = canvas.width / 600;
+            const scaleFactor = canvas.width / ORIGINAL_CANVAS_WIDTH;
             const obstacleTypes = [
                 { width: 20 * scaleFactor, height: 40 * scaleFactor, color: '#ff0041' },
                 { width: 30 * scaleFactor, height: 60 * scaleFactor, color: '#ff0041' },
@@ -1451,7 +1601,7 @@
             if (gameState.obstacleSpawnTimer > gameState.obstacleSpawnInterval && gameState.obstacles.length < 3) {
                 createDinoObstacle();
                 gameState.obstacleSpawnTimer = 0;
-                gameState.gameSpeed += 5 * deltaTime * (canvas.width / 600); // Increase speed over time, scaled
+                gameState.gameSpeed += 5 * deltaTime * (canvas.width / ORIGINAL_CANVAS_WIDTH); // Increase speed over time, scaled
                 // Decrease interval over time, clamp at 0.3 seconds
                 gameState.obstacleSpawnInterval = Math.max(0.3, gameState.obstacleSpawnInterval - (0.02 * deltaTime)); 
             }
@@ -1461,7 +1611,7 @@
 
         function drawDino() {
             if (!ctx) return;
-            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 5 * (canvas.width / 600); ctx.beginPath(); ctx.moveTo(0, GROUND_LINE_Y); ctx.lineTo(canvas.width, GROUND_LINE_Y); ctx.stroke();
+            ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 5 * (canvas.width / ORIGINAL_CANVAS_WIDTH); ctx.beginPath(); ctx.moveTo(0, GROUND_LINE_Y); ctx.lineTo(canvas.width, GROUND_LINE_Y); ctx.stroke();
             gameState.dino.draw();
             for (let obstacle of gameState.obstacles) { obstacle.draw(); }
         }
@@ -1472,7 +1622,9 @@
         const SNAKE_INITIAL_GRID_SIZE = 20; // Original grid size for scaling
 
         function initSnake() {
-            const scaleFactor = canvas.width / 600;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+            const scaleFactor = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH;
             const currentGridSize = SNAKE_INITIAL_GRID_SIZE * scaleFactor;
             gameState = {
                 snake: [{x: 10, y: 10}], food: {x: 15, y: 15}, direction: {x: 1, y: 0}, nextDirection: {x: 1, y: 0},
@@ -1514,9 +1666,9 @@
         function drawSnake() {
             if (!ctx) return;
             ctx.fillStyle = '#00ff41';
-            for (let segment of gameState.snake) { ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / 600), gameState.gridSize - 2 * (canvas.width / 600)); }
+            for (let segment of gameState.snake) { ctx.fillRect(segment.x * gameState.gridSize, segment.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / ORIGINAL_CANVAS_WIDTH), gameState.gridSize - 2 * (canvas.width / ORIGINAL_CANVAS_WIDTH)); }
             ctx.fillStyle = '#ff0041';
-            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / 600), gameState.gridSize - 2 * (canvas.width / 600));
+            ctx.fillRect(gameState.food.x * gameState.gridSize, gameState.food.y * gameState.gridSize, gameState.gridSize - 2 * (canvas.width / ORIGINAL_CANVAS_WIDTH), gameState.gridSize - 2 * (canvas.width / ORIGINAL_CANVAS_WIDTH));
         }
 
         function changeDirection(dir) {
@@ -1530,96 +1682,140 @@
         // --- Pong Game ---
         function initPong(difficulty) {
             gameState.difficulty = difficulty;
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 400;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
 
-            // Increased base speed for easy difficulty
+            const scaleFactorX = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT;
+
+            // --- Applying Math.round to paddle dimensions and initial positions ---
+            const paddleXOffset = Math.round(10 * scaleFactorX);
+            const paddleWidth = Math.round(10 * scaleFactorX);
+            const paddleHeight = Math.round(100 * scaleFactorY);
+
             let initialBallSpeed = 350 * scaleFactorX; // Default for easy, scaled by width
             if (difficulty === 'hard') {
                 initialBallSpeed = 415 * scaleFactorX; // Adjusted speed for hard difficulty, scaled by width
             }
-            
+
             const randomXDir = Math.random() < 0.5 ? 1 : -1;
             const randomYDir = Math.random() < 0.5 ? 1 : -1;
             let aiPaddleSpeed;
-            if (difficulty === 'easy') { 
+            if (difficulty === 'easy') {
                 aiPaddleSpeed = 250 * scaleFactorY; // Slightly increased AI speed for easy
-            } else { 
-                aiPaddleSpeed = 350 * scaleFactorY; 
-            } // Scaled by height
-            
+            } else {
+                aiPaddleSpeed = 350 * scaleFactorY;
+            }
+
             gameState = {
-                ...gameState,
+                ...gameState, // Preserve any other shared gameState properties if needed
                 paddle1: {
-                    x: 10 * scaleFactorX, // Scaled
-                    y: canvas.height/2 - (50 * scaleFactorY), // Scaled
-                    width: 10 * scaleFactorX, // Scaled
-                    height: 100 * scaleFactorY, // Scaled
+                    x: paddleXOffset, // Player 1 paddle is 'paddleXOffset' from the left edge
+                    y: Math.round(currentCanvasHeight / 2 - (paddleHeight / 2)),
+                    width: paddleWidth,
+                    height: paddleHeight,
                     dy: 0,
                     speed: 200 * scaleFactorY // Scaled
                 },
                 paddle2: {
-                    x: canvas.width - (20 * scaleFactorX), // Scaled
-                    y: canvas.height/2 - (50 * scaleFactorY), // Scaled
-                    width: 10 * scaleFactorX, // Scaled
-                    height: 100 * scaleFactorY, // Scaled
+                    // Player 2 paddle's X position. Mathematically symmetrical.
+                    // --- FIX FOR PONG (Visual Hack): If still asymmetrical, uncomment the '- 1' or '- 2' below ---
+                    // This is a common workaround for sub-pixel rendering issues where mathematical symmetry
+                    // doesn't translate to visual symmetry in certain browsers or screen DPIs.
+                    x: Math.round(currentCanvasWidth - paddleWidth - paddleXOffset) + 20, // Try uncommenting: - 1, // or - 2
+                    y: Math.round(currentCanvasHeight / 2 - (paddleHeight / 2)),
+                    width: paddleWidth,
+                    height: paddleHeight,
                     speed: aiPaddleSpeed
                 },
                 ball: {
-                    x: canvas.width/2,
-                    y: canvas.height/2,
+                    x: currentCanvasWidth / 2,
+                    y: currentCanvasHeight / 2,
                     dx: initialBallSpeed * randomXDir,
                     dy: initialBallSpeed * randomYDir,
                     radius: 8 * Math.min(scaleFactorX, scaleFactorY) // Scaled
                 },
-                initialBallSpeed: initialBallSpeed 
+                initialBallSpeed: initialBallSpeed,
+                player1Score: 0, // Player 1 (left) score
+                player2Score: 0 // Player 2 (right/AI) score
             };
-            score = 0; updateScore();
+            updateScore(); // Update the scoreboard for Pong
+
+            console.log("--- Pong Init Debug Info (Check these values carefully!) ---");
+            console.log("Canvas Width:", currentCanvasWidth, "Height:", currentCanvasHeight);
+            console.log("Calculated paddleXOffset (rounded):", paddleXOffset);
+            console.log("Calculated paddleWidth (rounded):", paddleWidth);
+            console.log("Paddle1 X (left edge):", gameState.paddle1.x, "Y:", gameState.paddle1.y);
+            console.log("Paddle2 X (left edge):", gameState.paddle2.x, "Y:", gameState.paddle2.y);
+            console.log("---------------------------------------------------------------");
+            console.log("Distance of Paddle1 from LEFT canvas edge:", gameState.paddle1.x);
+            console.log("Distance of Paddle2 from RIGHT canvas edge:", currentCanvasWidth - (gameState.paddle2.x + gameState.paddle2.width));
+            console.log("---------------------------------------------------------------");
+            console.log("If the two 'Distance' values above are IDENTICAL but the visual is off,");
+            console.log("then try uncommenting the '- 1' or '- 2' pixel adjustment for paddle2.x in initPong.");
+            console.log("---------------------------------------------------------------");
         }
 
         function updatePong(deltaTime) {
-            const scaleFactorY = canvas.height / 400;
+            const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
 
             if (keysPressed.has('arrowup') || keysPressed.has('w')) { gameState.paddle1.y = Math.max(0, gameState.paddle1.y - gameState.paddle1.speed * deltaTime); }
             if (keysPressed.has('arrowdown') || keysPressed.has('s')) { gameState.paddle1.y = Math.min(canvas.height - gameState.paddle1.height, gameState.paddle1.y + gameState.paddle1.speed * deltaTime); }
             gameState.ball.x += gameState.ball.dx * deltaTime; gameState.ball.y += gameState.ball.dy * deltaTime;
             if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
             else if (gameState.ball.y + gameState.ball.radius >= canvas.height) { gameState.ball.y = canvas.height - gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
-            
-            const ballHitPaddle1 = gameState.ball.dx < 0 && 
-                                   gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width && 
-                                   gameState.ball.y >= gameState.paddle1.y && 
-                                   gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height;
-            
-            const ballHitPaddle2 = gameState.ball.dx > 0 && 
-                                   gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x && 
-                                   gameState.ball.y >= gameState.paddle2.y && 
-                                   gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height;
+
+            const ballHitPaddle1 = gameState.ball.dx < 0 &&
+                gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width &&
+                gameState.ball.y >= gameState.paddle1.y &&
+                gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height;
+
+            const ballHitPaddle2 = gameState.ball.dx > 0 &&
+                gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x &&
+                gameState.ball.y >= gameState.paddle2.y &&
+                gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height;
 
             if (ballHitPaddle1) {
-                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius; 
-                gameState.ball.dx = -gameState.ball.dx; 
+                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius;
+                gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY; // Scaled deflection
             }
             else if (ballHitPaddle2) {
-                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius; 
-                gameState.ball.dx = -gameState.ball.dx; 
+                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius;
+                gameState.ball.dx = -gameState.ball.dx;
                 gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY; // Scaled deflection
             }
 
-            if (gameState.ball.x < 0) { gameOver(); return; } else if (gameState.ball.x > canvas.width) {
-                 gameState.ball.x = canvas.width/2; gameState.ball.y = canvas.height/2;
-                 gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed; gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
-                 score += 1; updateScore();
+            if (gameState.ball.x < 0) {
+                // Ball passed left paddle, Player 2 scores
+                gameState.player2Score++;
+                updateScore();
+                // Reset ball for next round
+                gameState.ball.x = canvas.width / 2;
+                gameState.ball.y = canvas.height / 2;
+                gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+            } else if (gameState.ball.x > canvas.width) {
+                // Ball passed right paddle, Player 1 scores
+                gameState.player1Score++;
+                updateScore();
+                // Reset ball for next round
+                gameState.ball.x = canvas.width / 2;
+                gameState.ball.y = canvas.height / 2;
+                gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
             }
+
+            // AI Paddle Movement
             if (gameState.difficulty === 'easy') {
-                let aiTargetY = gameState.ball.y - gameState.paddle2.height / 2; aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                let aiTargetY = gameState.ball.y - gameState.paddle2.height / 2;
+                aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
                 const moveAmount = gameState.paddle2.speed * deltaTime;
                 if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
                 else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
             } else {
-                const scaleFactorX = canvas.width / 600;
-                const scaleFactorY = canvas.height / 400;
+                const scaleFactorX = canvas.width / ORIGINAL_CANVAS_WIDTH;
+                const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
 
                 let predictedY = gameState.ball.y;
                 if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
@@ -1627,7 +1823,8 @@
                     if (timeToReachPaddleX > 0) { predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX; predictedY = Math.max(0, Math.min(canvas.height, predictedY)); }
                 }
                 const humanError = (Math.random() - 0.5) * 15 * scaleFactorY; // Scaled human error
-                let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError; aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError;
+                aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
                 const moveAmount = gameState.paddle2.speed * deltaTime;
                 if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
                 else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
@@ -1636,9 +1833,9 @@
 
         function drawPong() {
             if (!ctx) return;
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 400;
-            
+            const scaleFactorX = canvas.width / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+
             // Draw Paddle 1 (left paddle, original rectangular shape)
             ctx.fillStyle = '#00ff41';
             ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
@@ -1663,8 +1860,8 @@
             ctx.strokeStyle = '#00ff41';
             ctx.setLineDash([5 * scaleFactorX, 5 * scaleFactorX]); // Scaled dash
             ctx.beginPath();
-            ctx.moveTo(canvas.width/2, 0);
-            ctx.lineTo(canvas.width/2, canvas.height);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
             ctx.stroke();
             ctx.setLineDash([]); // Reset line dash
         }
@@ -1675,9 +1872,11 @@
         let lastShotTimeAsteroids = 0;
 
         function initAsteroids() {
-            const scaleFactor = canvas.width / 600;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+            const scaleFactor = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH;
             gameState = {
-                ship: {x: canvas.width/2, y: canvas.height/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150 * scaleFactor, rotationSpeed: 3},
+                ship: {x: currentCanvasWidth/2, y: currentCanvasHeight/2, angle: -Math.PI/2, vx: 0, vy: 0, thrust: 150 * scaleFactor, rotationSpeed: 3},
                 bullets: [], asteroids: []
             };
             for (let i = 0; i < 5; i++) { spawnAsteroid(3); }
@@ -1713,7 +1912,7 @@
                     }
                 }
             }
-            const shipDetectionRadius = 10 * (canvas.width / 600); // Scale ship detection radius
+            const shipDetectionRadius = 10 * (canvas.width / ORIGINAL_CANVAS_WIDTH); // Scale ship detection radius
             for (let asteroid of gameState.asteroids) {
                 const dx = gameState.ship.x - asteroid.x; const dy = gameState.ship.y - asteroid.y;
                 if (Math.sqrt(dx * dx + dy * dy) < asteroid.radius + shipDetectionRadius) { gameOver(); return; }
@@ -1726,7 +1925,7 @@
 
         function drawAsteroids() {
             if (!ctx) return;
-            const scaleFactor = canvas.width / 600;
+            const scaleFactor = canvas.width / ORIGINAL_CANVAS_WIDTH;
             ctx.save(); ctx.translate(gameState.ship.x, gameState.ship.y); ctx.rotate(gameState.ship.angle);
             ctx.strokeStyle = '#00ff41'; ctx.lineWidth = 2 * scaleFactor; ctx.beginPath(); ctx.moveTo(15 * scaleFactor, 0); ctx.lineTo(-10 * scaleFactor, -10 * scaleFactor); ctx.lineTo(-5 * scaleFactor, 0); ctx.lineTo(-10 * scaleFactor, 10 * scaleFactor); ctx.closePath(); ctx.stroke(); ctx.restore();
             ctx.fillStyle = '#00ffff'; gameState.bullets.forEach(bullet => { ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 2 * scaleFactor, 0, Math.PI * 2); ctx.fill(); });
@@ -1736,7 +1935,7 @@
         function shootBulletAsteroids() {
             const currentTime = performance.now() / 1000;
             if (currentTime - lastShotTimeAsteroids > ASTEROIDS_SHOOT_COOLDOWN) {
-                const scaleFactor = canvas.width / 600;
+                const scaleFactor = canvas.width / ORIGINAL_CANVAS_WIDTH;
                 gameState.bullets.push({
                     x: gameState.ship.x + Math.cos(gameState.ship.angle) * 15 * scaleFactor, y: gameState.ship.y + Math.sin(gameState.ship.angle) * 15 * scaleFactor,
                     vx: Math.cos(gameState.ship.angle) * 300 * scaleFactor + gameState.ship.vx, vy: Math.sin(gameState.ship.angle) * 300 * scaleFactor + gameState.ship.vy
@@ -1746,7 +1945,7 @@
         }
 
         function spawnAsteroid(size, x = null, y = null) {
-            const scaleFactor = canvas.width / 600;
+            const scaleFactor = canvas.width / ORIGINAL_CANVAS_WIDTH;
             const radiusMap = { 3: 40, 2: 25, 1: 15 }; const speedMap = { 3: 60, 2: 90, 1: 120 };
             const asteroidRadius = radiusMap[size] * scaleFactor;
             const asteroidSpeed = speedMap[size] * scaleFactor;
@@ -1760,47 +1959,260 @@
         }
         // --- End Asteroids Game ---
 
+        // --- Pong Game (Keeping your latest fix for reference) ---
+        function initPong(difficulty) {
+            gameState.difficulty = difficulty;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+
+            const scaleFactorX = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT;
+
+            const paddleXOffset = Math.round(10 * scaleFactorX);
+            const paddleWidth = Math.round(10 * scaleFactorX);
+            const paddleHeight = Math.round(100 * scaleFactorY);
+
+            let initialBallSpeed = 350 * scaleFactorX;
+            if (difficulty === 'hard') {
+                initialBallSpeed = 415 * scaleFactorX;
+            }
+
+            const randomXDir = Math.random() < 0.5 ? 1 : -1;
+            const randomYDir = Math.random() < 0.5 ? 1 : -1;
+            let aiPaddleSpeed;
+            if (difficulty === 'easy') {
+                aiPaddleSpeed = 275 * scaleFactorY;
+            } else {
+                aiPaddleSpeed = 300 * scaleFactorY;
+            }
+
+            gameState = {
+                ...gameState,
+                paddle1: {
+                    x: paddleXOffset,
+                    y: Math.round(currentCanvasHeight / 2 - (paddleHeight / 2)),
+                    width: paddleWidth,
+                    height: paddleHeight,
+                    dy: 0,
+                    speed: 212.5 * scaleFactorY
+                },
+                paddle2: {
+                    x: Math.round(currentCanvasWidth - paddleWidth - paddleXOffset) + 42.5,
+                    y: Math.round(currentCanvasHeight / 2 - (paddleHeight / 2)),
+                    width: paddleWidth,
+                    height: paddleHeight,
+                    speed: aiPaddleSpeed
+                },
+                ball: {
+                    x: currentCanvasWidth / 2,
+                    y: currentCanvasHeight / 2,
+                    dx: initialBallSpeed * randomXDir,
+                    dy: initialBallSpeed * randomYDir,
+                    radius: 8 * Math.min(scaleFactorX, scaleFactorY)
+                },
+                initialBallSpeed: initialBallSpeed,
+                player1Score: 0,
+                player2Score: 0
+            };
+            updateScore();
+
+            console.log("--- Pong Init Debug Info (After your +10 fix) ---");
+            console.log("Canvas Width:", currentCanvasWidth, "Height:", currentCanvasHeight);
+            console.log("Calculated paddleXOffset (rounded):", paddleXOffset);
+            console.log("Calculated paddleWidth (rounded):", paddleWidth);
+            console.log("Paddle1 X (left edge):", gameState.paddle1.x, "Y:", gameState.paddle1.y);
+            console.log("Paddle2 X (left edge, with +10 adjustment):", gameState.paddle2.x, "Y:", gameState.paddle2.y); // <--- CONSOLE LOG UPDATED
+            console.log("---------------------------------------------------------------");
+            console.log("Distance of Paddle1 from LEFT canvas edge:", gameState.paddle1.x);
+            console.log("Distance of Paddle2 from RIGHT canvas edge (calculated with +10):", currentCanvasWidth - (gameState.paddle2.x + gameState.paddle2.width)); // <--- CONSOLE LOG UPDATED
+            console.log("---------------------------------------------------------------");
+        }
+
+        function updatePong(deltaTime) {
+            const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+
+            if (keysPressed.has('arrowup') || keysPressed.has('w')) { gameState.paddle1.y = Math.max(0, gameState.paddle1.y - gameState.paddle1.speed * deltaTime); }
+            if (keysPressed.has('arrowdown') || keysPressed.has('s')) { gameState.paddle1.y = Math.min(canvas.height - gameState.paddle1.height, gameState.paddle1.y + gameState.paddle1.speed * deltaTime); }
+            gameState.ball.x += gameState.ball.dx * deltaTime; gameState.ball.y += gameState.ball.dy * deltaTime;
+            if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
+            else if (gameState.ball.y + gameState.ball.radius >= canvas.height) { gameState.ball.y = canvas.height - gameState.ball.radius; gameState.ball.dy = -gameState.ball.dy; }
+
+            const ballHitPaddle1 = gameState.ball.dx < 0 &&
+                gameState.ball.x - gameState.ball.radius <= gameState.paddle1.x + gameState.paddle1.width &&
+                gameState.ball.y >= gameState.paddle1.y &&
+                gameState.ball.y <= gameState.paddle1.y + gameState.paddle1.height;
+
+            const ballHitPaddle2 = gameState.ball.dx > 0 &&
+                gameState.ball.x + gameState.ball.radius >= gameState.paddle2.x &&
+                gameState.ball.y >= gameState.paddle2.y &&
+                gameState.ball.y <= gameState.paddle2.y + gameState.paddle2.height;
+
+            if (ballHitPaddle1) {
+                gameState.ball.x = gameState.paddle1.x + gameState.paddle1.width + gameState.ball.radius;
+                gameState.ball.dx = -gameState.ball.dx;
+                gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY;
+            }
+            else if (ballHitPaddle2) {
+                gameState.ball.x = gameState.paddle2.x - gameState.ball.radius;
+                gameState.ball.dx = -gameState.ball.dx;
+                gameState.ball.dy += (Math.random() * 50 - 25) * scaleFactorY;
+            }
+
+            // --- NEW: Win Condition Logic ---
+            const WINNING_SCORE = 4; // Define the score needed to win
+
+            if (gameState.ball.x < 0) { // Ball went past left side (Player 2 scores)
+                gameState.player2Score++;
+                updateScore();
+                if (gameState.player2Score >= WINNING_SCORE) { // Check if Player 2 reached winning score
+                    gameOver("Player 2 Wins!"); // End the game
+                    return; // Stop further updates
+                }
+                gameState.ball.x = canvas.width / 2;
+                gameState.ball.y = canvas.height / 2;
+                gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+            } else if (gameState.ball.x > canvas.width) { // Ball went past right side (Player 1 scores)
+                gameState.player1Score++;
+                updateScore();
+                if (gameState.player1Score >= WINNING_SCORE) { // Check if Player 1 reached winning score
+                    gameOver("Player 1 Wins!"); // End the game
+                    return; // Stop further updates
+                }
+                gameState.ball.x = canvas.width / 2;
+                gameState.ball.y = canvas.height / 2;
+                gameState.ball.dx = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+                gameState.ball.dy = (Math.random() < 0.5 ? 1 : -1) * gameState.initialBallSpeed;
+            }
+
+            if (gameState.difficulty === 'easy') {
+                let aiTargetY = gameState.ball.y - gameState.paddle2.height / 2;
+                aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                const moveAmount = gameState.paddle2.speed * deltaTime;
+                if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
+                else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
+            } else {
+                const scaleFactorX = canvas.width / ORIGINAL_CANVAS_WIDTH;
+                const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+
+                let predictedY = gameState.ball.y;
+                if (gameState.ball.dx > 0 && gameState.ball.x > canvas.width / 2) {
+                    const timeToReachPaddleX = (gameState.paddle2.x - gameState.ball.x) / gameState.ball.dx;
+                    if (timeToReachPaddleX > 0) { predictedY = gameState.ball.y + gameState.ball.dy * timeToReachPaddleX; predictedY = Math.max(0, Math.min(canvas.height, predictedY)); }
+                }
+                const humanError = (Math.random() - 0.5) * 15 * scaleFactorY;
+                let aiTargetY = predictedY - gameState.paddle2.height / 2 + humanError;
+                aiTargetY = Math.max(0, Math.min(canvas.height - gameState.paddle2.height, aiTargetY));
+                const moveAmount = gameState.paddle2.speed * deltaTime;
+                if (gameState.paddle2.y < aiTargetY) { gameState.paddle2.y = Math.min(aiTargetY, gameState.paddle2.y + moveAmount); }
+                else if (gameState.paddle2.y > aiTargetY) { gameState.paddle2.y = Math.max(aiTargetY, gameState.paddle2.y - moveAmount); }
+            }
+        }
+
+        function drawPong() {
+            if (!ctx) return;
+            const scaleFactorX = canvas.width / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+
+            ctx.fillStyle = '#00ff41'; ctx.fillRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
+            ctx.strokeStyle = '#00cc00';
+            ctx.lineWidth = 1 * Math.min(scaleFactorX, scaleFactorY);
+            ctx.strokeRect(gameState.paddle1.x, gameState.paddle1.y, gameState.paddle1.width, gameState.paddle1.height);
+
+            ctx.fillStyle = '#ff0041'; ctx.fillRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
+            ctx.strokeStyle = '#cc0033';
+            ctx.lineWidth = 1 * Math.min(scaleFactorX, scaleFactorY);
+            ctx.strokeRect(gameState.paddle2.x, gameState.paddle2.y, gameState.paddle2.width, gameState.paddle2.height);
+
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#00ff41';
+            ctx.setLineDash([5 * scaleFactorX, 5 * scaleFactorX]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        // --- End Pong Game ---
 
         // --- Breakout Game ---
         function initBreakout() {
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 400;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+            const scaleFactorX = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT;
+
+            // Caluclate paddle dimensions first
+            const paddleWidth = 100 * scaleFactorX;
+            const paddleHeight = 10 * scaleFactorY;
 
             gameState = {
                 paddle: {
-                    x: canvas.width/2 - (50 * scaleFactorX),
-                    y: canvas.height - (20 * scaleFactorY),
+                    x: (currentCanvasWidth / 2 - (paddleWidth / 2)) + (30 * scaleFactorX),
+                    y: currentCanvasHeight - (10 * scaleFactorY), // Paddle remains lower
                     width: 100 * scaleFactorX,
                     height: 10 * scaleFactorY,
                     speed: 250 * scaleFactorX
                 },
                 ball: {
-                    x: canvas.width/2,
-                    y: canvas.height - (30 * scaleFactorY),
-                    vx: 250 * scaleFactorX,
-                    vy: -250 * scaleFactorY,
+                    x: currentCanvasWidth / 2,
+                    y: currentCanvasHeight - (30 * scaleFactorY),
+                    vx: 335 * scaleFactorX,
+                    vy: -335 * scaleFactorY,
                     radius: 8 * Math.min(scaleFactorX, scaleFactorY),
                     prevX: 0, prevY: 0
                 },
                 blocks: [], blocksRemaining: 0
             };
-            const blockWidth = 55 * scaleFactorX;
-            const blockHeight = 15 * scaleFactorY;
-            const blockPadding = 5 * scaleFactorX;
-            const blockOffsetTop = 50 * scaleFactorY;
-            const blocksPerRow = 10;
-            const blockOffsetLeft = (canvas.width - (blocksPerRow * blockWidth + (blocksPerRow - 1) * blockPadding)) / 2;
-            for (let row = 0; row < 5; row++) {
+
+            const blocksPerRow = 10; // Keeping 10 bricks
+            const numRows = 5;
+            const originalBlockDesignHeight = 15;
+            const originalTopOffset = 60;
+
+            // --- Calculate Stretched Block Dimensions ---
+            const baseWidthWithoutStretch = currentCanvasWidth / blocksPerRow;
+            const stretchAmountPerBlock = 6 * scaleFactorX; // Adjust this number (e.g., 5, 10, 15) for brick width
+            const blockWidth = Math.round(baseWidthWithoutStretch + stretchAmountPerBlock);
+            const totalStretchedBlocksWidth = blocksPerRow * blockWidth;
+
+            // Calculate the left offset to center the stretched blocks, THEN ADD an additional manual shift
+            let blockOffsetLeft = (currentCanvasWidth - totalStretchedBlocksWidth) / 2;
+            blockOffsetLeft += (22.5 * scaleFactorX); // <-- UNCOMMENTED AND INCREASED THIS VALUE TO SHIFT BLOCKS RIGHT
+
+            const blockOffsetTop = Math.floor(originalTopOffset * scaleFactorY);
+            const blockHeight = Math.floor(originalBlockDesignHeight * scaleFactorY);
+            const verticalPaddingBetweenRows = Math.floor(5 * scaleFactorY);
+
+
+            console.log("--- Breakout Init Debug Info (Blocks Shifted Right More) ---");
+            console.log("Paddle X Position:", gameState.paddle.x.toFixed(2));
+            console.log("Canvas Width:", currentCanvasWidth);
+            console.log("Blocks Per Row (kept at 10):", blocksPerRow);
+            console.log("Calculated Block Width (stretched):", blockWidth);
+            console.log("Total Stretched Blocks Width:", totalStretchedBlocksWidth);
+            console.log("Block Offset Left (final calculated position with right shift):", blockOffsetLeft.toFixed(2));
+            console.log("----------------------------");
+
+            // Loop to create blocks
+            for (let row = 0; row < numRows; row++) {
+                let currentX = blockOffsetLeft;
                 for (let col = 0; col < blocksPerRow; col++) {
                     gameState.blocks.push({
-                        x: col * (blockWidth + blockPadding) + blockOffsetLeft,
-                        y: row * (blockHeight + blockPadding) + blockOffsetTop,
+                        x: currentX,
+                        y: blockOffsetTop + row * (blockHeight + verticalPaddingBetweenRows),
                         width: blockWidth,
                         height: blockHeight,
                         color: `hsl(${row * 50}, 100%, 50%)`,
                         hits: 5 - row
                     });
                     gameState.blocksRemaining++;
+
+                    currentX += blockWidth;
                 }
             }
             score = 0; updateScore();
@@ -1808,54 +2220,113 @@
 
         function checkCollision(ball, rect) {
             return ball.x + ball.radius > rect.x && ball.x - ball.radius < rect.x + rect.width &&
-                   ball.y + ball.radius > rect.y && ball.y - ball.radius < rect.y + rect.height;
+                ball.y + ball.radius > rect.y && ball.y - ball.radius < rect.y + rect.height;
         }
-        
+
         function getCollisionResponse(ball, block) {
             let hitX = false; let hitY = false;
             if (ball.prevX + ball.radius <= block.x && ball.x + ball.radius > block.x) {
                 ball.x = block.x - ball.radius; ball.vx *= -1; hitX = true;
-            } else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) {
+            }
+            else if (ball.prevX - ball.radius >= block.x + block.width && ball.x - ball.radius < block.x + block.width) {
                 ball.x = block.x + block.width + ball.radius; ball.vx *= -1; hitX = true;
             }
             if (ball.prevY + ball.radius <= block.y && ball.y + ball.radius > block.y) {
                 ball.y = block.y - ball.radius; ball.vy *= -1; hitY = true;
-            } else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) {
+            }
+            else if (ball.prevY - ball.radius >= block.y + block.height && ball.y - ball.radius < block.y + block.height) {
                 ball.y = block.y + block.height + ball.radius; ball.vy *= -1; hitY = true;
             }
             return hitX || hitY;
         }
-        
+
         function updateBreakout(deltaTime) {
-            const scaleFactorX = canvas.width / 600;
+            const scaleFactorX = canvas.width / ORIGINAL_CANVAS_WIDTH;
+            const scaleFactorY = canvas.height / ORIGINAL_CANVAS_HEIGHT; // <--- ADDED THIS LINE
+            const maxBallSpeed = 600 * scaleFactorX; // Define a max speed for the ball
 
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) { gameState.paddle.x = Math.max(0, gameState.paddle.x - gameState.paddle.speed * deltaTime); }
             if (keysPressed.has('arrowright') || keysPressed.has('d')) { gameState.paddle.x = Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x + gameState.paddle.speed * deltaTime); }
             gameState.ball.prevX = gameState.ball.x; gameState.ball.prevY = gameState.ball.y;
-            gameState.ball.x += gameState.ball.vx * deltaTime; gameState.ball.y += gameState.ball.vy * deltaTime;
-            if (gameState.ball.x - gameState.ball.radius <= 0) { gameState.ball.x = gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
-            else if (gameState.ball.x + gameState.ball.radius >= canvas.width) { gameState.ball.x = canvas.width - gameState.ball.radius; gameState.ball.vx = -gameState.ball.vx; }
-            if (gameState.ball.y - gameState.ball.radius <= 0) { gameState.ball.y = gameState.ball.radius; gameState.ball.vy = -gameState.ball.vy; }
-            // Corrected paddle collision variable reference from `ball` to `gameState.ball`
-            if (gameState.ball.vy > 0 && gameState.ball.x + gameState.ball.radius > gameState.paddle.x && gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width && gameState.ball.y + gameState.ball.radius >= gameState.paddle.y && gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
-                gameState.ball.y = gameState.paddle.y - gameState.ball.radius; 
-                gameState.ball.vy = -gameState.ball.vy;
-                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2); gameState.ball.vx = hitPoint * 2 * scaleFactorX; // Scaled deflection
+            gameState.ball.x += gameState.ball.vx * deltaTime;
+            gameState.ball.y += gameState.ball.vy * deltaTime;
+
+            // Wall collisions
+            if (gameState.ball.x - gameState.ball.radius <= 0) {
+                gameState.ball.x = gameState.ball.radius;
+                gameState.ball.vx = -gameState.ball.vx;
+            } else if (gameState.ball.x + gameState.ball.radius >= canvas.width) {
+                gameState.ball.x = canvas.width - gameState.ball.radius;
+                gameState.ball.vx = -gameState.ball.vx;
             }
+            if (gameState.ball.y - gameState.ball.radius <= 0) { // Top wall collision
+                gameState.ball.y = gameState.ball.radius;
+                gameState.ball.vy = -gameState.ball.vy;
+            }
+
+            // Paddle collision
+            if (gameState.ball.vy > 0 && // Moving downwards
+                gameState.ball.x + gameState.ball.radius > gameState.paddle.x &&
+                gameState.ball.x - gameState.ball.radius < gameState.paddle.x + gameState.paddle.width &&
+                gameState.ball.y + gameState.ball.radius >= gameState.paddle.y &&
+                gameState.ball.prevY + gameState.ball.radius < gameState.paddle.y) {
+                gameState.ball.y = gameState.paddle.y - gameState.ball.radius;
+                gameState.ball.vy = -gameState.ball.vy;
+
+                const hitPoint = gameState.ball.x - (gameState.paddle.x + gameState.paddle.width / 2);
+                gameState.ball.vx = hitPoint * 2 * scaleFactorX; // Original calculation
+
+                // CAP THE BALL'S HORIZONTAL VELOCITY after paddle hit
+                gameState.ball.vx = Math.max(-maxBallSpeed, Math.min(maxBallSpeed, gameState.ball.vx));
+                // Ensure some minimum speed to avoid getting stuck or going perfectly vertical too often
+                if (Math.abs(gameState.ball.vx) < 50 * scaleFactorX) { // If too slow horizontally
+                    gameState.ball.vx = (gameState.ball.vx >= 0 ? 1 : -1) * 50 * scaleFactorX; // Give it a minimum horizontal push
+                }
+
+                // Cap the vertical velocity too, just in case
+                gameState.ball.vy = Math.max(-maxBallSpeed, Math.min(maxBallSpeed, gameState.ball.vy));
+                // Ensure it always has some vertical speed when going up
+                if (gameState.ball.vy > -50 * scaleFactorY && gameState.ball.vy < 0) {
+                    gameState.ball.vy = -50 * scaleFactorY;
+                }
+            }
+
+            // Block collisions
             for (let i = gameState.blocks.length - 1; i >= 0; i--) {
                 const block = gameState.blocks[i];
                 if (checkCollision(gameState.ball, block)) {
                     if (getCollisionResponse(gameState.ball, block)) {
                         block.hits--;
-                        if (block.hits <= 0) { score += 10; updateScore(); gameState.blocks.splice(i, 1); gameState.blocksRemaining--; }
-                        break;
+                        if (block.hits <= 0) {
+                            score += 10;
+                            updateScore();
+                            gameState.blocks.splice(i, 1);
+                            gameState.blocksRemaining--;
+                        }
+                        // Cap velocity after hitting a block as well
+                        gameState.ball.vx = Math.max(-maxBallSpeed, Math.min(maxBallSpeed, gameState.ball.vx));
+                        gameState.ball.vy = Math.max(-maxBallSpeed, Math.min(maxBallSpeed, gameState.ball.vy));
+                        break; // Exit loop after first collision
                     }
                 }
             }
-            if (gameState.ball.y - gameState.ball.radius > canvas.height) { gameOver(); return; }
-            if (gameState.blocksRemaining === 0) { gameOver(); return; }
+
+            // Game Over conditions
+            if (gameState.ball.y - gameState.ball.radius > canvas.height) {
+                console.log("GAME OVER: Ball went below canvas. Ball Y:", gameState.ball.y.toFixed(2), "Canvas Height:", canvas.height);
+                gameOver();
+                return;
+            }
+            if (gameState.blocksRemaining === 0) {
+                console.log("GAME OVER: All blocks cleared!");
+                gameOver();
+                return;
+            }
+
+            // Debugging ball position and velocity
+            console.log(`Ball X: ${gameState.ball.x.toFixed(2)}, Y: ${gameState.ball.y.toFixed(2)}, VX: ${gameState.ball.vx.toFixed(2)}, VY: ${gameState.ball.vy.toFixed(2)}`);
         }
-        
+
         function drawBreakout() {
             if (!ctx) return;
             ctx.fillStyle = '#00ff41'; ctx.fillRect(gameState.paddle.x, gameState.paddle.y, gameState.paddle.width, gameState.paddle.height);
@@ -1865,7 +2336,7 @@
                 ctx.strokeStyle = '#222'; ctx.strokeRect(block.x, block.y, block.width, block.height);
             });
         }
-        // --- End Breakout Game ---
+// --- End Breakout Game ---
 
 
         // --- Tetris Game ---
@@ -2110,10 +2581,11 @@
 
             // Display Level and Lines Cleared (optional, for Tetris specific)
             ctx.fillStyle = '#00ff41';
-            ctx.font = `${16 * (window.TETRIS_BLOCK_SIZE / 20)}px "Courier New", monospace`; // Scaled font size
+            ctx.font = `${35 * (canvas.width / ORIGINAL_CANVAS_WIDTH)}px 'Courier New', monospace`; // Scaled font size
             ctx.textAlign = 'left';
-            ctx.fillText(`Level: ${gameState.level}`, 5 * (window.TETRIS_BLOCK_SIZE / 20), 20 * (window.TETRIS_BLOCK_SIZE / 20));
-            ctx.fillText(`Lines: ${gameState.linesCleared}`, 5 * (window.TETRIS_BLOCK_SIZE / 20), 40 * (window.TETRIS_BLOCK_SIZE / 20));
+            ctx.textBaseline = 'top'; // Align to top for consistency
+            ctx.fillText(`Level: ${gameState.level}`, 10, 10);
+            ctx.fillText(`Lines: ${gameState.linesCleared}`, 10, 30);
         }
         // --- End Tetris Game ---
 
@@ -2129,7 +2601,7 @@
             gameState = {
                 rows: MINESWEEPER_DEFAULT_ROWS,
                 cols: MINESWEEPER_DEFAULT_COLS,
-                mines: MINESWEEPER_DEFAULT_MINES,
+                mines: MINESWEEPER_DEFAULT_MINES, // Corrected variable name
                 board: [],
                 revealed: [],
                 flagged: [],
@@ -2156,10 +2628,6 @@
             gameState.minesRemaining = gameState.mines;
             document.getElementById('mineCountDisplay').textContent = `Mines: ${gameState.minesRemaining}`;
             document.getElementById('timerDisplay').textContent = `Time: 0s`;
-
-            // Add event listeners specific to Minesweeper
-            canvas.addEventListener('click', handleMinesweeperClick);
-            canvas.addEventListener('contextmenu', handleMinesweeperRightClick); // For right-click to flag
 
             gameState.startTime = Date.now(); // Start timer
             gameState.timer = 0;
@@ -2396,18 +2864,29 @@
         // --- End Minesweeper Game ---
 
         // --- Galactic Invaders Game ---
-        // Original constants for scaling reference
-        const GI_ORIGINAL_PLAYER_WIDTH = 40;
-        const GI_ORIGINAL_PLAYER_HEIGHT = 40; // Adjusted original height to better fit the image
-        const GI_ORIGINAL_PLAYER_Y_OFFSET = 50; // Distance from bottom
-        const GI_ORIGINAL_PLAYER_BULLET_RADIUS = 3;
-        const GI_ORIGINAL_ENEMY_WIDTH = 30;
-        const GI_ORIGINAL_ENEMY_HEIGHT = 20;
-        const GI_ORIGINAL_ENEMY_BULLET_RADIUS = 3;
-        const GI_ORIGINAL_ENEMY_ADVANCE_Y = 20; // Original vertical drop when changing direction
-        const GI_ORIGINAL_OFFSET_Y = 50; // Original vertical offset of enemy group from top
-        const GI_ORIGINAL_HORIZONTAL_SPACING = 15;
-        const GI_ORIGINAL_VERTICAL_SPACING = 20;
+        // Reference dimensions for consistent element scaling
+        const GALACTIC_INVADERS_REFERENCE_WIDTH = 600;
+        const GALACTIC_INVADERS_REFERENCE_HEIGHT = 700;
+
+        // Original conceptual sizes for player/enemy to maintain aspect ratio during drawing
+        const GI_PLAYER_DRAW_REF_WIDTH = 40;
+        const GI_PLAYER_DRAW_REF_HEIGHT = 40; // This is a general bounding box height, not actual drawn visual height
+        const GI_ENEMY_DRAW_REF_WIDTH = 30;
+        const GI_ENEMY_DRAW_REF_HEIGHT = 20;
+
+        // Constants for player ship drawing (relative to its center)
+        const GI_PLAYER_DRAW_TOP_OFFSET_FROM_CENTER = -10; // Topmost point of drawn ship relative to its Y
+        const GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER = 15; // Bottommost point of drawn ship relative to its Y
+
+
+        // Other constants scaled by game width
+        const GI_PLAYER_Y_OFFSET = 20; // Changed from 50 to 20 to move player lower
+        const GI_PLAYER_BULLET_RADIUS = 3;
+        const GI_ENEMY_BULLET_RADIUS = 3;
+        const GI_ENEMY_ADVANCE_Y = 20; 
+        const GI_OFFSET_Y = 50;
+        const GI_HORIZONTAL_SPACING = 15;
+        const GI_VERTICAL_SPACING = 20;
 
         // Speeds remain constant relative to screen size (pixels per second)
         const PLAYER_SPEED = 200; 
@@ -2422,16 +2901,20 @@
         const ENEMY_BASE_RAM_CHANCE = 0.00005;
 
         function initGalacticInvaders() {
-            // No direct canvas width/height assignment here, handled by resizeCanvas
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 700;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+
+            // Determine a single game scale based on current canvas width relative to the reference width
+            // This ensures all drawing operations maintain the original aspect ratio of elements
+            const gameScale = currentCanvasWidth / GALACTIC_INVADERS_REFERENCE_WIDTH;
 
             gameState = {
                 player: {
-                    x: canvas.width / 2,
-                    y: canvas.height - (GI_ORIGINAL_PLAYER_Y_OFFSET * scaleFactorY), // Scaled
-                    width: GI_ORIGINAL_PLAYER_WIDTH * scaleFactorX, // Scaled
-                    height: GI_ORIGINAL_PLAYER_HEIGHT * scaleFactorY, // Scaled
+                    x: currentCanvasWidth / 2,
+                    // Temporarily set Y to a default, it will be recalculated in startGameFromOverlay
+                    y: currentCanvasHeight / 2, 
+                    width: GI_PLAYER_DRAW_REF_WIDTH * gameScale, // For collision detection (could be slightly larger than visual)
+                    height: GI_PLAYER_DRAW_REF_HEIGHT * gameScale, // For collision detection
                     lastShotTime: 0,
                     canShoot: true,
                     isDestroyed: false,
@@ -2449,10 +2932,10 @@
                 enemyDirection: 1,
                 enemyAdvanceTimer: 0,
                 enemyAdvanceInterval: 2,
-                waveOscillationAmplitude: 5 * scaleFactorY, // Scaled
+                waveOscillationAmplitude: 5 * gameScale, 
                 waveOscillationFrequency: 5,
-                currentEnemyShootChance: ENEMY_BASE_SHOULD_SHOOT_CHANCE,
-                currentEnemyRamChance: ENEMY_BASE_RAM_CHANCE,
+                currentEnemyShootChance: ENEMY_BASE_SHOULD_SHOOT_CHANCE * (1 + (gameState.wave - 1) * 0.1), 
+                currentEnemyRamChance: ENEMY_BASE_RAM_CHANCE * (1 + (gameState.wave - 1) * 0.5), 
                 explosions: [],
                 explosionDuration: 0.5
             };
@@ -2468,8 +2951,8 @@
                 return; // Don't draw if blinking during invincibility
             }
 
-            const scaleX = player.width / GI_ORIGINAL_PLAYER_WIDTH;
-            const scaleY = player.height / GI_ORIGINAL_PLAYER_HEIGHT;
+            // Calculate element-specific scale based on canvas width
+            const entityScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
 
             const basePlayerX = player.x;
             const basePlayerY = player.y;
@@ -2480,11 +2963,11 @@
             // Main Body (triangle pointing up, with a wider base)
             ctx.fillStyle = '#00ff41'; // Green for the main body
             ctx.strokeStyle = '#00aa00'; // Darker green outline
-            ctx.lineWidth = 2 * Math.min(scaleX, scaleY);
+            ctx.lineWidth = 2 * entityScale;
             ctx.beginPath();
-            ctx.moveTo(0, -10 * scaleY); // Top point
-            ctx.lineTo(-20 * scaleX, 10 * scaleY); // Bottom-left
-            ctx.lineTo(20 * scaleX, 10 * scaleY); // Bottom-right
+            ctx.moveTo(0, GI_PLAYER_DRAW_TOP_OFFSET_FROM_CENTER * entityScale); // Top point
+            ctx.lineTo(-20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale); // Bottom-left
+            ctx.lineTo(20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale); // Bottom-right
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
@@ -2493,7 +2976,7 @@
             ctx.fillStyle = '#00ffff'; // Cyan for cockpit
             ctx.strokeStyle = '#00aaaa';
             ctx.beginPath();
-            ctx.rect(-5 * scaleX, -10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.rect(-5 * entityScale, GI_PLAYER_DRAW_TOP_OFFSET_FROM_CENTER * entityScale, 10 * entityScale, 5 * entityScale);
             ctx.fill();
             ctx.stroke();
 
@@ -2501,10 +2984,10 @@
             ctx.fillStyle = '#ff0041'; // Red for wings
             ctx.strokeStyle = '#aa0022';
             ctx.beginPath();
-            ctx.moveTo(-20 * scaleX, 10 * scaleY); // Connects to main body
-            ctx.lineTo(-30 * scaleX, 5 * scaleY);
-            ctx.lineTo(-30 * scaleX, 15 * scaleY);
-            ctx.lineTo(-20 * scaleX, 15 * scaleY);
+            ctx.moveTo(-20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale); // Connects to main body
+            ctx.lineTo(-30 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 10 * entityScale);
+            ctx.lineTo(-30 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale + 5 * entityScale);
+            ctx.lineTo(-20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale + 5 * entityScale);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
@@ -2513,10 +2996,10 @@
             ctx.fillStyle = '#ff0041'; // Red for wings
             ctx.strokeStyle = '#aa0022';
             ctx.beginPath();
-            ctx.moveTo(20 * scaleX, 10 * scaleY); // Connects to main body
-            ctx.lineTo(30 * scaleX, 5 * scaleY);
-            ctx.lineTo(30 * scaleX, 15 * scaleY);
-            ctx.lineTo(20 * scaleX, 15 * scaleY);
+            ctx.moveTo(20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale); // Connects to main body
+            ctx.lineTo(30 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 10 * entityScale);
+            ctx.lineTo(30 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale + 5 * entityScale);
+            ctx.lineTo(20 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale + 5 * entityScale);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
@@ -2524,12 +3007,12 @@
             // Thrusters (small rectangles at the very bottom)
             ctx.fillStyle = '#ffa500'; // Orange for thruster glow
             ctx.beginPath();
-            ctx.rect(-15 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
-            ctx.rect(5 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.rect(-15 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale, 10 * entityScale, 5 * entityScale);
+            ctx.rect(5 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale, 10 * entityScale, 5 * entityScale);
             ctx.fill();
             ctx.strokeStyle = '#cc8800';
-            ctx.strokeRect(-15 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
-            ctx.strokeRect(5 * scaleX, 10 * scaleY, 10 * scaleX, 5 * scaleY);
+            ctx.strokeRect(-15 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale, 10 * entityScale, 5 * entityScale);
+            ctx.strokeRect(5 * entityScale, GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * entityScale - 5 * entityScale, 10 * entityScale, 5 * entityScale);
 
             ctx.restore(); // Restore the canvas state
         }
@@ -2537,12 +3020,11 @@
 
         // Draw Enemy Ship (more detailed)
         function drawEnemyShip(enemy) {
-            const scaleX = canvas.width / 600;
-            const scaleY = canvas.height / 700;
+            const entityScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
 
             ctx.fillStyle = enemy.color;
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1 * Math.min(scaleX, scaleY);
+            ctx.lineWidth = 1 * entityScale;
 
             ctx.beginPath();
             ctx.ellipse(enemy.x, enemy.y, enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
@@ -2551,7 +3033,7 @@
 
             ctx.beginPath();
             ctx.moveTo(enemy.x - enemy.width / 2, enemy.y);
-            ctx.lineTo(enemy.x - enemy.width / 2 - (5 * scaleX), enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x - enemy.width / 2 - (5 * entityScale), enemy.y + enemy.height / 3);
             ctx.lineTo(enemy.x - enemy.width / 2, enemy.y + enemy.height / 2);
             ctx.closePath();
             ctx.fill();
@@ -2559,7 +3041,7 @@
 
             ctx.beginPath();
             ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
-            ctx.lineTo(enemy.x + enemy.width / 2 + (5 * scaleX), enemy.y + enemy.height / 3);
+            ctx.lineTo(enemy.x + enemy.width / 2 + (5 * entityScale), enemy.y + enemy.height / 3);
             ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
             ctx.closePath();
             ctx.fill();
@@ -2567,15 +3049,15 @@
             
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.arc(enemy.x, enemy.y - enemy.height / 4, 3 * Math.min(scaleX, scaleY), 0, Math.PI * 2);
+            ctx.arc(enemy.x, enemy.y - enemy.height / 4, 3 * entityScale, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.strokeStyle = '#eee';
             ctx.beginPath();
             ctx.moveTo(enemy.x - enemy.width / 4, enemy.y - enemy.height / 2);
-            ctx.lineTo(enemy.x - enemy.width / 4 - (5 * scaleX), enemy.y - enemy.height / 2 - (5 * scaleY));
+            ctx.lineTo(enemy.x - enemy.width / 4 - (5 * entityScale), enemy.y - enemy.height / 2 - (5 * entityScale));
             ctx.moveTo(enemy.x + enemy.width / 4, enemy.y - enemy.height / 2);
-            ctx.lineTo(enemy.x + enemy.width / 4 + (5 * scaleX), enemy.y - enemy.height / 2 - (5 * scaleY));
+            ctx.lineTo(enemy.x + enemy.width / 4 + (5 * entityScale), enemy.y - enemy.height / 2 - (5 * entityScale));
             ctx.stroke();
         }
 
@@ -2583,7 +3065,7 @@
         function drawExplosion(explosion, totalDuration) {
             if (!ctx) return;
             const progress = 1 - (explosion.timer / totalDuration);
-            const maxRadius = 30 * (canvas.width / 600); // Scaled max radius
+            const maxRadius = 30 * (canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH); // Scaled max radius
             const currentRadius = maxRadius * progress;
             const alpha = 1 - progress;
 
@@ -2613,17 +3095,19 @@
             const enemyRows = Math.min(baseEnemyRows + Math.floor((gameState.wave - 1) / 2), maxEnemyRows); 
             const enemiesPerRow = Math.min(baseEnemiesPerRow + Math.floor((gameState.wave - 1) * 0.75), 10);
 
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 700;
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
 
-            const enemyWidth = GI_ORIGINAL_ENEMY_WIDTH * scaleFactorX;
-            const enemyHeight = GI_ORIGINAL_ENEMY_HEIGHT * scaleFactorY;
-            const horizontalSpacing = GI_ORIGINAL_HORIZONTAL_SPACING * scaleFactorX;
-            const verticalSpacing = GI_ORIGINAL_VERTICAL_SPACING * scaleFactorY;
+            const gameScale = currentCanvasWidth / GALACTIC_INVADERS_REFERENCE_WIDTH;
+
+            const enemyWidth = GI_ENEMY_DRAW_REF_WIDTH * gameScale;
+            const enemyHeight = GI_ENEMY_DRAW_REF_HEIGHT * gameScale;
+            const horizontalSpacing = GI_HORIZONTAL_SPACING * gameScale;
+            const verticalSpacing = GI_VERTICAL_SPACING * gameScale;
 
             const totalGroupWidth = enemiesPerRow * enemyWidth + (enemiesPerRow - 1) * horizontalSpacing;
-            const startX = (canvas.width - totalGroupWidth) / 2;
-            const offsetY = GI_ORIGINAL_OFFSET_Y * scaleFactorY;
+            const startX = (currentCanvasWidth - totalGroupWidth) / 2;
+            const offsetY = GI_OFFSET_Y * gameScale;
 
             gameState.currentEnemyShootChance = ENEMY_BASE_SHOULD_SHOOT_CHANCE * (1 + (gameState.wave - 1) * 0.1); 
             gameState.currentEnemyRamChance = ENEMY_BASE_RAM_CHANCE * (1 + (gameState.wave - 1) * 0.5); 
@@ -2631,11 +3115,11 @@
             for (let r = 0; r < enemyRows; r++) { 
                 for (let c = 0; c < enemiesPerRow; c++) {
                     gameState.enemies.push({
-                        x: startX + c * (enemyWidth + horizontalSpacing) + (Math.random() * 10 - 5) * scaleFactorX,
-                        y: offsetY + r * (enemyHeight + verticalSpacing) + (Math.random() * 10 - 5) * scaleFactorY,
+                        x: startX + c * (enemyWidth + horizontalSpacing) + (Math.random() * 10 - 5) * gameScale,
+                        y: offsetY + r * (enemyHeight + verticalSpacing) + (Math.random() * 10 - 5) * gameScale,
                         initialY: offsetY + r * (enemyHeight + verticalSpacing),
-                        width: enemyWidth,
-                        height: enemyHeight,
+                        width: enemyWidth, // Store scaled width for collision detection
+                        height: enemyHeight, // Store scaled height for collision detection
                         color: `hsl(${Math.random() * 360}, 80%, 70%)`, 
                         isDiving: false,
                         diveTargetX: 0 
@@ -2647,12 +3131,13 @@
         function firePlayerBullet() {
             const currentTime = performance.now() / 1000;
             if (currentTime - gameState.player.lastShotTime > PLAYER_SHOOT_COOLDOWN) {
-                const scaleFactor = canvas.width / 600;
+                const gameScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
                 gameState.playerBullets.push({
                     x: gameState.player.x,
-                    y: gameState.player.y - gameState.player.height / 2,
-                    radius: GI_ORIGINAL_PLAYER_BULLET_RADIUS * scaleFactor,
-                    vy: -PLAYER_BULLET_SPEED * (canvas.height / 700) // Scale bullet speed by Y
+                    // Bullet origin should be from the top of the player's main body (GI_PLAYER_DRAW_TOP_OFFSET_FROM_CENTER)
+                    y: gameState.player.y + (GI_PLAYER_DRAW_TOP_OFFSET_FROM_CENTER * gameScale), 
+                    radius: GI_PLAYER_BULLET_RADIUS * gameScale, 
+                    vy: -PLAYER_BULLET_SPEED * (canvas.height / GALACTIC_INVADERS_REFERENCE_HEIGHT) 
                 });
                 gameState.player.lastShotTime = currentTime;
             }
@@ -2660,9 +3145,7 @@
 
         function updateGalacticInvaders(deltaTime) {
             const currentTimeSeconds = performance.now() / 1000;
-            const scaleFactorX = canvas.width / 600;
-            const scaleFactorY = canvas.height / 700;
-
+            const gameScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH; // Use consistent scale
 
             if (gameState.player.isInvincible) {
                 gameState.player.invincibilityTimer -= deltaTime;
@@ -2673,10 +3156,10 @@
 
             // Player movement scaled by current canvas width
             if (keysPressed.has('arrowleft') || keysPressed.has('a')) {
-                gameState.player.x -= PLAYER_SPEED * scaleFactorX * deltaTime;
+                gameState.player.x -= PLAYER_SPEED * gameScale * deltaTime;
             }
             if (keysPressed.has('arrowright') || keysPressed.has('d')) {
-                gameState.player.x += PLAYER_SPEED * scaleFactorX * deltaTime;
+                gameState.player.x += PLAYER_SPEED * gameScale * deltaTime;
             }
             // Clamp player position
             gameState.player.x = Math.max(gameState.player.width / 2, Math.min(canvas.width - gameState.player.width / 2, gameState.player.x));
@@ -2696,7 +3179,7 @@
                 gameState.enemyAdvanceTimer = 0;
                 for (const enemy of gameState.enemies) {
                     // Adjust margin from wall for check based on scaling
-                    const wallMargin = 10 * scaleFactorX;
+                    const wallMargin = 10 * gameScale;
                     if (!enemy.isDiving && ((gameState.enemyDirection === 1 && enemy.x + enemy.width / 2 >= canvas.width - wallMargin) ||
                                             (gameState.enemyDirection === -1 && enemy.x - enemy.width / 2 <= wallMargin))) {
                         hitWallThisFrame = true;
@@ -2714,10 +3197,10 @@
                 const enemy = gameState.enemies[i];
 
                 if (enemy.isDiving) {
-                    enemy.y += ENEMY_DIVE_SPEED * scaleFactorY * deltaTime; // Scale dive speed by Y
+                    enemy.y += ENEMY_DIVE_SPEED * gameScale * deltaTime; 
                     const dx = enemy.diveTargetX - enemy.x;
-                    if (Math.abs(dx) > 5 * scaleFactorX) { // Scale closeness threshold
-                        enemy.x += Math.sign(dx) * ENEMY_DIVE_SPEED * 0.5 * scaleFactorX * deltaTime; // Horizontal chase during dive, scaled
+                    if (Math.abs(dx) > 5 * gameScale) { 
+                        enemy.x += Math.sign(dx) * ENEMY_DIVE_SPEED * 0.5 * gameScale * deltaTime; 
                     }
                     
                     if (enemy.y - enemy.height / 2 > canvas.height) {
@@ -2726,11 +3209,11 @@
                         enemy.diveTargetX = gameState.player.x;
                     }
                 } else {
-                    enemy.x += gameState.enemyDirection * ENEMY_NORMAL_SPEED_X * scaleFactorX * deltaTime; // Scaled normal X speed
+                    enemy.x += gameState.enemyDirection * ENEMY_NORMAL_SPEED_X * gameScale * deltaTime; 
                     if (advanceDown) {
-                        enemy.initialY += ENEMY_NORMAL_SPEED_Y * scaleFactorY; // Scaled vertical drop
+                        enemy.initialY += ENEMY_NORMAL_SPEED_Y * gameScale; 
                     }
-                    enemy.y = enemy.initialY + Math.sin(currentTimeSeconds * gameState.waveOscillationFrequency + enemy.x / (50 * scaleFactorX)) * gameState.waveOscillationAmplitude;
+                    enemy.y = enemy.initialY + Math.sin(currentTimeSeconds * gameState.waveOscillationFrequency + enemy.x / (50 * gameScale)) * gameState.waveOscillationAmplitude;
 
                     if (Math.random() < gameState.currentEnemyRamChance) {
                         enemy.isDiving = true;
@@ -2739,8 +3222,8 @@
                         gameState.enemyBullets.push({
                             x: enemy.x,
                             y: enemy.y + enemy.height / 2,
-                            radius: GI_ORIGINAL_ENEMY_BULLET_RADIUS * scaleFactorX, // Scaled
-                            vy: ENEMY_BULLET_SPEED * scaleFactorY // Scaled
+                            radius: GI_ENEMY_BULLET_RADIUS * gameScale, 
+                            vy: ENEMY_BULLET_SPEED * gameScale
                         });
                     }
 
@@ -2846,8 +3329,10 @@
                 
                 setTimeout(() => {
                     gameState.player.isDestroyed = false;
-                    gameState.player.x = canvas.width / 2;
-                    gameState.player.y = canvas.height - (GI_ORIGINAL_PLAYER_Y_OFFSET * (canvas.height / 700)); // Respawn position scaled
+                    const gameScale = canvas.width / GALACTIC_INVADERS_REFERENCE_WIDTH;
+                    // Respawn player at the correct calculated Y position
+                    gameState.player.y = canvas.height - (GI_PLAYER_Y_OFFSET * gameScale) - (GI_PLAYER_DRAW_BOTTOM_OFFSET_FROM_CENTER * gameScale); 
+                    gameState.player.x = canvas.width / 2; // Reset X to center
                     gameState.player.isInvincible = true;
                     gameState.player.invincibilityTimer = gameState.player.invincibilityDuration;
                 }, gameState.explosionDuration * 1000);
@@ -2887,11 +3372,227 @@
         }
         // --- End Galactic Invaders Game ---
 
+        // --- Flappy Bird Game ---
+        // Original constants for scaling reference - MOVED TO GLOBAL SCOPE
+        const FLAPPY_ORIGINAL_BIRD_WIDTH = 30;
+        const FLAPPY_ORIGINAL_BIRD_HEIGHT = 20;
+        const FLAPPY_ORIGINAL_GRAVITY = 1000; // px/s^2
+        const FLAPPY_ORIGINAL_JUMP_STRENGTH = -400; // px/s
+        const FLAPPY_ORIGINAL_PIPE_WIDTH = 50;
+        const FLAPPY_ORIGINAL_PIPE_SPEED = 150; // px/s
+        const FLAPPY_ORIGINAL_GROUND_HEIGHT = 50; // height from bottom of canvas
+        const FLAPPY_ORIGINAL_PIPE_GAP = 120; // Adjusted from 150 to 120
+
+        function initFlappyBird() {
+            const currentCanvasWidth = canvas.width;
+            const currentCanvasHeight = canvas.height;
+
+            const scaleFactorX = currentCanvasWidth / ORIGINAL_CANVAS_WIDTH; // Based on default game original width
+            const scaleFactorY = currentCanvasHeight / ORIGINAL_CANVAS_HEIGHT; // Based on default game original height
+
+            gameState = {
+                bird: {
+                    x: currentCanvasWidth * 0.2, // 20% from left, scaled
+                    y: currentCanvasHeight / 2,
+                    width: FLAPPY_ORIGINAL_BIRD_WIDTH * scaleFactorX,
+                    height: FLAPPY_ORIGINAL_BIRD_HEIGHT * scaleFactorY,
+                    dy: 0, // Current vertical velocity
+                },
+                gravity: FLAPPY_ORIGINAL_GRAVITY * scaleFactorY,
+                jumpStrength: FLAPPY_ORIGINAL_JUMP_STRENGTH * scaleFactorY,
+                pipes: [],
+                pipeSpawnTimer: 0,
+                pipeWidth: FLAPPY_ORIGINAL_PIPE_WIDTH * scaleFactorX,
+                pipeSpeed: FLAPPY_ORIGINAL_PIPE_SPEED * scaleFactorX,
+                pipeSpawnInterval: 2, // Original static interval in seconds
+                groundHeight: FLAPPY_ORIGINAL_GROUND_HEIGHT * scaleFactorY,
+                isGameOver: false,
+                gameStarted: false // Game starts only on first flap/spacebar press
+            };
+            score = 0;
+            updateScore();
+        }
+
+        function flapBird() {
+            if (!gameState.isGameOver) {
+                gameState.bird.dy = gameState.jumpStrength;
+            }
+        }
+
+        function createFlappyPipe() {
+            const minTopPipeHeight = 50 * (canvas.height / ORIGINAL_CANVAS_HEIGHT); // Scaled minimum height for top pipe
+            // Use the new FLAPPY_ORIGINAL_PIPE_GAP constant
+            const maxTopPipeHeight = canvas.height - gameState.groundHeight - (FLAPPY_ORIGINAL_PIPE_GAP * (canvas.height / ORIGINAL_CANVAS_HEIGHT)) - minTopPipeHeight; 
+
+            const topHeight = minTopPipeHeight + Math.random() * maxTopPipeHeight; // Random top pipe height
+            // Use the new FLAPPY_ORIGINAL_PIPE_GAP constant
+            const gap = FLAPPY_ORIGINAL_PIPE_GAP * (canvas.height / ORIGINAL_CANVAS_HEIGHT); // Fixed gap, scaled
+
+            gameState.pipes.push({
+                x: canvas.width,
+                width: gameState.pipeWidth,
+                topHeight: topHeight,
+                gap: gap,
+                bottomHeight: canvas.height - topHeight - gap - gameState.groundHeight, // Derived bottom pipe height
+                passed: false
+            });
+        }
+
+        function updateFlappyBird(deltaTime) {
+            if (gameState.isGameOver || !gameState.gameStarted) {
+                // If game hasn't started, just update bird Y slightly for "waiting" animation
+                // Ensure gameState.bird exists before trying to access its properties
+                if (gameState.bird) { 
+                    gameState.bird.y = canvas.height / 2 + Math.sin(performance.now() / 200) * 5 * (canvas.height / ORIGINAL_CANVAS_HEIGHT);
+                }
+                return; 
+            }
+
+            // Apply gravity
+            gameState.bird.dy += gameState.gravity * deltaTime;
+            gameState.bird.y += gameState.bird.dy * deltaTime;
+
+            // Check collision with top/bottom
+            if (gameState.bird.y < 0) {
+                gameState.bird.y = 0;
+                gameState.bird.dy = 0; // Stop upward movement
+            }
+            if (gameState.bird.y + gameState.bird.height > canvas.height - gameState.groundHeight) {
+                gameState.bird.y = canvas.height - gameState.groundHeight - gameState.bird.height;
+                gameOver();
+                gameState.isGameOver = true;
+                return;
+            }
+
+            // Move and spawn pipes
+            gameState.pipeSpawnTimer += deltaTime;
+            if (gameState.pipeSpawnTimer > gameState.pipeSpawnInterval) {
+                createFlappyPipe();
+                gameState.pipeSpawnTimer = 0;
+            }
+
+            for (let i = gameState.pipes.length - 1; i >= 0; i--) {
+                const pipe = gameState.pipes[i];
+                pipe.x -= gameState.pipeSpeed * deltaTime;
+
+                // Collision detection with pipes
+                const bird = gameState.bird;
+                // Check if bird is within horizontal range of pipe
+                if (bird.x < pipe.x + pipe.width && bird.x + bird.width > pipe.x) {
+                    // Check collision with top pipe segment
+                    if (bird.y < pipe.topHeight || // bird top above pipe bottom
+                        bird.y + bird.height > (pipe.topHeight + pipe.gap)) { // bird bottom below pipe top
+                        gameOver();
+                        gameState.isGameOver = true;
+                        return;
+                    }
+                }
+
+                // Check for scoring (bird passed pipe)
+                if (pipe.x + pipe.width < bird.x && !pipe.passed) {
+                    score++;
+                    updateScore();
+                    pipe.passed = true; // Mark as passed to avoid multiple scores
+                }
+
+                // Remove off-screen pipes
+                if (pipe.x + pipe.width < 0) {
+                    gameState.pipes.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawFlappyBird() {
+            if (!ctx) return;
+
+            // Background
+            ctx.fillStyle = '#70c5ce'; // Light blue sky
+            ctx.fillRect(0, 0, canvas.width, canvas.height - gameState.groundHeight);
+
+            // Ground
+            ctx.fillStyle = '#ded895'; // Brown ground
+            ctx.fillRect(0, canvas.height - gameState.groundHeight, canvas.width, gameState.groundHeight);
+            ctx.strokeStyle = '#5a4d31'; // Darker brown for ground line
+            ctx.lineWidth = 3 * (canvas.height / ORIGINAL_CANVAS_HEIGHT); // Scaled line width
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - gameState.groundHeight);
+            ctx.lineTo(canvas.width, canvas.height - gameState.groundHeight);
+            ctx.stroke();
+
+            // Pipes
+            ctx.fillStyle = '#74bf2e'; // Green pipes
+            ctx.strokeStyle = '#4e821b'; // Darker green outline
+            ctx.lineWidth = 2 * (canvas.width / ORIGINAL_CANVAS_WIDTH); // Scaled line width
+            gameState.pipes.forEach(pipe => {
+                // Top pipe
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
+                ctx.strokeRect(pipe.x, 0, pipe.width, pipe.topHeight);
+                // Bottom pipe
+                const bottomPipeY = pipe.topHeight + pipe.gap;
+                ctx.fillRect(pipe.x, bottomPipeY, pipe.width, canvas.height - bottomPipeY - gameState.groundHeight);
+                ctx.strokeRect(pipe.x, bottomPipeY, pipe.width, canvas.height - bottomPipeY - gameState.groundHeight);
+
+                // Add pipe caps
+                const capHeight = 20 * (canvas.height / ORIGINAL_CANVAS_HEIGHT);
+                const capWidth = pipe.width + 10 * (canvas.width / ORIGINAL_CANVAS_WIDTH);
+                const capXOffset = -5 * (canvas.width / ORIGINAL_CANVAS_WIDTH);
+                
+                ctx.fillRect(pipe.x + capXOffset, pipe.topHeight - capHeight, capWidth, capHeight); // Top cap
+                ctx.strokeRect(pipe.x + capXOffset, pipe.topHeight - capHeight, capWidth, capHeight);
+                
+                ctx.fillRect(pipe.x + capXOffset, bottomPipeY, capWidth, capHeight); // Bottom cap
+                ctx.strokeRect(pipe.x + capXOffset, bottomPipeY, capWidth, capHeight);
+            });
+
+            // Bird
+            const bird = gameState.bird;
+            // Only draw bird if it exists
+            if (bird) {
+                const scale = Math.min((canvas.width / ORIGINAL_CANVAS_WIDTH), (canvas.height / ORIGINAL_CANVAS_HEIGHT));
+                
+                // Body (circle)
+                ctx.fillStyle = '#ffeb3b'; // Yellow bird
+                ctx.strokeStyle = '#e0a000'; // Darker yellow outline
+                ctx.lineWidth = 2 * scale;
+                ctx.beginPath();
+                ctx.arc(bird.x + bird.width / 2, bird.y + bird.height / 2, bird.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(bird.x + bird.width * 0.7, bird.y + bird.height * 0.3, 3 * scale, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Beak
+                ctx.fillStyle = '#ff8c00'; // Orange beak
+                ctx.beginPath();
+                ctx.moveTo(bird.x + bird.width, bird.y + bird.height * 0.4);
+                ctx.lineTo(bird.x + bird.width + 10 * scale, bird.y + bird.height * 0.5);
+                ctx.lineTo(bird.x + bird.width, bird.y + bird.height * 0.6);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+
+            // Game start instructions
+            if (!gameState.gameStarted && !gameState.isGameOver) {
+                ctx.fillStyle = '#fff';
+                ctx.font = `${24 * (canvas.width / ORIGINAL_CANVAS_WIDTH)}px 'Courier New', monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Press Spacebar to Start!', canvas.width / 2, canvas.height / 2 - 50 * (canvas.height / ORIGINAL_CANVAS_HEIGHT));
+            }
+        }
+        // --- End Flappy Bird Game ---
+
 
         // Initial setup on window load
         window.addEventListener('load', () => {
             createStars();
-            // Need to get canvas element here before calling resizeCanvas for the first time
+            // Ensure canvas and context are available globally before any game starts
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
 
@@ -2901,14 +3602,21 @@
             document.getElementById('messageBox').style.display = 'none'; // Hide message box
             document.getElementById('mainHeader').style.display = 'block'; // Ensure header is shown on initial load
             document.getElementById('gameTitle').style.display = 'none'; 
+            // Hide Pong's specific elements on initial load
+            document.getElementById('pongDifficultySelection').style.display = 'none'; 
+            document.getElementById('restartGameButton').style.display = 'none';
+            document.querySelector('.action-buttons').style.display = 'none';
+
             updateScore(); // Initial update for score display (will show Score: 0)
         });
 
         // Re-create stars and resize canvas on window resize to ensure full coverage and responsiveness
         window.addEventListener('resize', () => {
             createStars();
-            // Call resizeCanvas only if a game is currently selected, to avoid errors before game initialization
-            if (currentGame) {
+            // Call resizeCanvas only if a game is currently selected and active.
+            // If the game is not active, it means we are in the menu or an overlay,
+            // so no need to resize the canvas yet.
+            if (currentGame && gameActive) {
                 resizeCanvas();
             }
         });
